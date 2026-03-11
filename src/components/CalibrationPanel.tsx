@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { AiCalibration } from '../types';
 
 type CalibrationPanelProps = {
@@ -5,6 +6,8 @@ type CalibrationPanelProps = {
   onClose: () => void;
   aiCalibration: AiCalibration[];
   onUpdateCalibration: (idx: number, key: keyof AiCalibration, value: number) => void;
+  onSaveCalibration: () => void;
+  onLoadCalibration: (file: File) => void;
 };
 
 export function CalibrationPanel({
@@ -12,7 +15,10 @@ export function CalibrationPanel({
   onClose,
   aiCalibration,
   onUpdateCalibration,
+  onSaveCalibration,
+  onLoadCalibration,
 }: CalibrationPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <>
       {/* Backdrop */}
@@ -40,17 +46,44 @@ export function CalibrationPanel({
                 a·x² + b·x + c = y
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 p-2 text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
-              aria-label="Close calibration panel"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onLoadCalibration(file);
+                  e.target.value = '';
+                }}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
+              >
+                Load Calib
+              </button>
+              <button
+                type="button"
+                onClick={onSaveCalibration}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
+              >
+                Save Calib
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-slate-300 p-2 text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
+                aria-label="Close calibration panel"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Calibration Table */}

@@ -547,17 +547,7 @@ function App() {
     downloadJson('calibration.json', calibrationData);
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleLoadCalibration = () => {
-    // Trigger file input click
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleLoadCalibrationFile = async (file: File) => {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
@@ -592,11 +582,6 @@ function App() {
       setStatus('Calibration loaded successfully');
     } catch (err) {
       setStatus((err as Error).message);
-    } finally {
-      // Reset the input value to allow loading the same file again
-      if (event.target) {
-        event.target.value = '';
-      }
     }
   };
 
@@ -725,19 +710,6 @@ function App() {
                     </svg>
                   )}
                 </span>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-              <button type="button" className="button-secondary" onClick={handleLoadCalibration}>
-                Load Calib
-              </button>
-              <button type="button" className="button-secondary" onClick={handleDownloadCalibration}>
-                Save Calib
               </button>
               {!tsvWriter ? (
                 <button type="button" className="button-primary" onClick={handleStartSave}>
@@ -990,6 +962,8 @@ function App() {
         onClose={() => setCalibrationPanelOpen(false)}
         aiCalibration={aiCalibration}
         onUpdateCalibration={updateAiCalibration}
+        onSaveCalibration={handleDownloadCalibration}
+        onLoadCalibration={handleLoadCalibrationFile}
       />
     </div>
   );
