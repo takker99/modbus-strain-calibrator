@@ -23,10 +23,10 @@ export function CalibrationPanel({
         />
       )}
 
-      {/* Slide-in Panel */}
+      {/* Slide-in Panel from right */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-full max-w-2xl transform bg-white shadow-2xl transition-transform duration-300 dark:bg-slate-900 ${
-          open ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-2xl transform bg-white shadow-2xl transition-transform duration-300 dark:bg-slate-900 ${
+          open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex h-full flex-col">

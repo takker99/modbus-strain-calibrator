@@ -17,6 +17,7 @@ import { dataStorage, MAX_POINTS_IN_MEMORY, StoredDataPoint } from './utils/data
 import { TsvWriter, createTsvWriter } from './utils/tsvExport';
 import { ChartPanel } from './components/ChartPanel';
 import { CalibrationPanel } from './components/CalibrationPanel';
+import { HamburgerMenu } from './components/HamburgerMenu';
 import { readJsonCookie, writeJsonCookie } from './utils/cookies';
 
 // Polyfill Web Serial API for environments without native support (e.g., Android)
@@ -187,6 +188,13 @@ function App() {
   const batchUpdateTimer = useRef<number | undefined>(undefined);
   const tsvWriterRef = useRef<TsvWriter | null>(null);
   const [calibrationPanelOpen, setCalibrationPanelOpen] = useState(false);
+  const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState(false);
+
+  const handleMenuSelect = (item: string) => {
+    if (item === 'calibration') {
+      setCalibrationPanelOpen(true);
+    }
+  };
 
   // Initialize IndexedDB
   useEffect(() => {
@@ -673,20 +681,7 @@ function App() {
                 {isUsingPolyfill ? 'WebUSB' : 'WebSerial'} - {formatSerialSettings(serialSettings)}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setCalibrationPanelOpen(true)}
-                className="button-secondary flex items-center gap-1"
-                aria-label="Open calibration settings"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-                <span className="hidden sm:inline">Calibration</span>
-              </button>
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 role="switch"
@@ -753,6 +748,18 @@ function App() {
                   Stop Save
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setHamburgerMenuOpen(true)}
+                className="button-secondary flex items-center justify-center p-2"
+                aria-label="Open menu"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
             </div>
           </header>
         </div>
@@ -971,6 +978,12 @@ function App() {
         />
       </div>
       </div>
+
+      <HamburgerMenu
+        open={hamburgerMenuOpen}
+        onClose={() => setHamburgerMenuOpen(false)}
+        onSelectItem={handleMenuSelect}
+      />
 
       <CalibrationPanel
         open={calibrationPanelOpen}
