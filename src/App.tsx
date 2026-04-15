@@ -330,7 +330,7 @@ function App() {
 
       if (modbusPrecision === 'auto' && !autoResolvedPrecisionRef.current) {
         try {
-          // Probe float input register once with short timeout
+          // Probe float register address availability once (short timeout, 1 register)
           await clientRef.current.readInputRegisters(AI_FLOAT_START_REGISTER, 1, 100);
           autoResolvedPrecisionRef.current = 'extended';
           setAutoResolvedPrecision('extended');
