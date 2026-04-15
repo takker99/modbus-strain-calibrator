@@ -422,9 +422,10 @@ function App() {
       const now = performance.now();
       const rateMs = pollingRate.valueMs;
       if (nextPollAtRef.current === 0) {
-        nextPollAtRef.current = now;
+        nextPollAtRef.current = now + rateMs;
       }
 
+      // Keep the polling cadence aligned to its target timeline instead of completion time.
       const elapsedMs = Math.max(0, now - nextPollAtRef.current);
       const remainderMs = elapsedMs % rateMs;
       const delayMs = remainderMs === 0 ? rateMs : rateMs - remainderMs;
@@ -435,17 +436,20 @@ function App() {
     }
   }, [pollOnce, pollingRate.valueMs]);
 
-  const startPolling = useCallback(() => {
-    // Clear any existing timer
+  const scheduleImmediatePoll = useCallback(() => {
     if (pollTimer.current !== undefined) {
       window.clearTimeout(pollTimer.current);
     }
     nextPollAtRef.current = performance.now();
-    // Start first poll immediately, which will schedule the next one
     pollTimer.current = window.setTimeout(() => {
       void runPollingLoop();
     }, 0);
   }, [runPollingLoop]);
+
+  const startPolling = useCallback(() => {
+    // Start first poll immediately, which will schedule the next one
+    scheduleImmediatePoll();
+  }, [scheduleImmediatePoll]);
 
   const stopPolling = useCallback(() => {
     if (pollTimer.current !== undefined) {
@@ -500,11 +504,7 @@ function App() {
     const handleVisibilityChange = () => {
       if (document.visibilityState !== 'visible') return;
       if (pollTimer.current === undefined || pollingInProgressRef.current) return;
-      window.clearTimeout(pollTimer.current);
-      nextPollAtRef.current = performance.now();
-      pollTimer.current = window.setTimeout(() => {
-        void runPollingLoop();
-      }, 0);
+      scheduleImmediatePoll();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -513,7 +513,7 @@ function App() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pageshow', handleVisibilityChange);
     };
-  }, [runPollingLoop]);
+  }, [scheduleImmediatePoll]);
 
   const handleConnect = async () => {
     try {
