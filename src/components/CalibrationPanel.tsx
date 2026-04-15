@@ -1,5 +1,52 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AiCalibration } from '../types';
+
+type CalibCellProps = {
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+};
+
+function CalibCell({ value, onChange, className }: CalibCellProps) {
+  const [localValue, setLocalValue] = useState(() => String(value));
+  const focusedRef = useRef(false);
+
+  // Sync from prop whenever the field is not being edited (e.g. after file load)
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setLocalValue(String(value));
+    }
+  }, [value]);
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={localValue}
+      className={className}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onChange={(e) => {
+        setLocalValue(e.target.value);
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        const trimmed = localValue.trim();
+        if (trimmed !== '') {
+          const parsed = Number(trimmed);
+          if (!isNaN(parsed)) {
+            onChange(parsed);
+            setLocalValue(String(parsed));
+            return;
+          }
+        }
+        // Invalid or empty — reset to the last valid prop value
+        setLocalValue(String(value));
+      }}
+    />
+  );
+}
 
 type CalibrationPanelProps = {
   open: boolean;
@@ -107,32 +154,23 @@ export function CalibrationPanel({
                       CH {idx.toString().padStart(2, '0')}
                     </td>
                     <td className="py-1.5 px-2">
-                      <input
-                        type="number"
+                      <CalibCell
                         value={cal.a}
-                        onChange={(e) =>
-                          onUpdateCalibration(idx, 'a', Number(e.target.value))
-                        }
+                        onChange={(v) => onUpdateCalibration(idx, 'a', v)}
                         className="input-compact w-full"
                       />
                     </td>
                     <td className="py-1.5 px-2">
-                      <input
-                        type="number"
+                      <CalibCell
                         value={cal.b}
-                        onChange={(e) =>
-                          onUpdateCalibration(idx, 'b', Number(e.target.value))
-                        }
+                        onChange={(v) => onUpdateCalibration(idx, 'b', v)}
                         className="input-compact w-full"
                       />
                     </td>
                     <td className="py-1.5 pl-2">
-                      <input
-                        type="number"
+                      <CalibCell
                         value={cal.c}
-                        onChange={(e) =>
-                          onUpdateCalibration(idx, 'c', Number(e.target.value))
-                        }
+                        onChange={(v) => onUpdateCalibration(idx, 'c', v)}
                         className="input-compact w-full"
                       />
                     </td>
