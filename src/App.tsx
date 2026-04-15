@@ -929,7 +929,7 @@ function App() {
                     {ch.id < 8 ? 'mV/V' : 'V'}
                   </span>
                   <span className="font-bold tabular-nums text-xl text-sky-600 dark:text-sky-400">
-                    {ch.voltage.toFixed(3)}
+                    {ch.voltage.toFixed(ch.id < 8 ? 4 : 3)}
                   </span>
                 </div>
               </div>
