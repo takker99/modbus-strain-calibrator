@@ -72,8 +72,10 @@ export function ModbusConfigPanel({
                 type="number"
                 value={slaveId}
                 onChange={(e) => {
-                  const next = Number(e.target.value);
-                  if (Number.isNaN(next) || !Number.isInteger(next) || next < 1 || next > 247) return;
+                  const rawValue = e.target.value.trim();
+                  if (!/^\d+$/.test(rawValue)) return;
+                  const next = parseInt(rawValue, 10);
+                  if (next < 1 || next > 247) return;
                   onSlaveIdChange(next);
                 }}
                 className="w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
