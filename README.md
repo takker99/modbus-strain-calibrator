@@ -36,7 +36,7 @@ bun run build
 ## 主な機能
 
 - Modbus RTU デバイス接続（デフォルト 38400bps、7/8 data bits・parity・stop bits 設定可）
-- AI 16ch の定期ポーリング（200ms〜5分）
+- AI 16ch の定期ポーリング（200ms〜5分）と AO 8ch（Holding Register）の同期
 - Modbus 精度モード（Normal(i16) / Extended(f32)）
 - キャリブレーション `ax²+bx+c` の編集・Cookie保存・JSONダウンロード
 - 計測データの TSV 出力（ヘッダー付き追記）

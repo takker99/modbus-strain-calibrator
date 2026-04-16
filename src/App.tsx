@@ -3,6 +3,7 @@ import { WebSerialModbusClient } from './modbus/webserialClient';
 import {
   AiCalibration,
   AiChannel,
+  AoChannel,
   PollingRateOption,
   DataPoint,
   SerialSettings,
@@ -110,6 +111,14 @@ const createAiChannels = (calibration: AiCalibration[]): AiChannel[] =>
     };
   });
 
+const createAoChannels = (): AoChannel[] =>
+  Array.from({ length: AO_CHANNELS }, (_, idx) => ({
+    id: idx,
+    raw: 0,
+    physical: 0,
+    label: `CH ${idx} (GP8403-${Math.floor(idx / 4)})`,
+  }));
+
 const formatAiChannelDisplayLabel = (idx: number): string =>
   `CH ${idx.toString().padStart(2, '0')} (${idx < 8 ? 'HX711' : 'ADS1115'}-${idx
     .toString(16)
@@ -186,6 +195,7 @@ function App() {
   const [pollingRate, setPollingRate] = useState<PollingRateOption>(POLLING_OPTIONS[0]);
   const [aiCalibration, setAiCalibration] = useState<AiCalibration[]>(loadAiCalibration(AI_CHANNELS));
   const [aiChannels, setAiChannels] = useState<AiChannel[]>(createAiChannels(aiCalibration));
+  const [aoChannels, setAoChannels] = useState<AoChannel[]>(createAoChannels());
   const [connected, setConnected] = useState(false);
   const [acquiring, setAcquiring] = useState(false);
   const [status, setStatus] = useState('Disconnected');
@@ -202,6 +212,7 @@ function App() {
   const [chart4Y, setChart4Y] = useState(initialAxes.chart4.y);
   const clientRef = useRef<WebSerialModbusClient | null>(null);
   const aiRawSourceRef = useRef<number[]>(Array(AI_CHANNELS).fill(0));
+  const aoRawSourceRef = useRef<number[]>(Array(AO_CHANNELS).fill(0));
   const pollTimer = useRef<number | undefined>(undefined);
   const nextPollAtRef = useRef<number>(0);
   const pollingInProgressRef = useRef(false);
@@ -309,6 +320,18 @@ function App() {
     }
   }, []);
 
+  const syncAoChannels = useCallback((values: number[]) => {
+    const normalizedValues = Array.from({ length: AO_CHANNELS }, (_, idx) => Math.trunc(values[idx] ?? 0));
+    aoRawSourceRef.current = normalizedValues;
+    setAoChannels((prev) =>
+      prev.map((ch, idx) => ({
+        ...ch,
+        raw: normalizedValues[idx],
+        physical: normalizedValues[idx],
+      })),
+    );
+  }, []);
+
   const updateDataHistory = useCallback(async (aiRaw: number[], aiPhysical: number[]) => {
     const timestamp = Date.now();
     const dataPoint: StoredDataPoint = {
@@ -363,6 +386,7 @@ function App() {
       const aiSourceValues = effectivePrecision === 'extended'
         ? await clientRef.current.readInputRegistersAsFloat32Abcd(AI_FLOAT_START_REGISTER, AI_CHANNELS)
         : await clientRef.current.readInputRegisters(AI_START_REGISTER, AI_CHANNELS);
+      await clientRef.current.writeMultipleHoldingRegisters(AO_START_REGISTER, aoRawSourceRef.current);
       aiRawSourceRef.current = aiSourceValues;
       const aiRaw = aiSourceValues;
       const aiPhysical = aiSourceValues.map((value, idx) =>
@@ -542,6 +566,8 @@ function App() {
         modbusPrecision === 'extended'
       );
       await client.connect();
+      const holdingValues = await client.readHoldingRegisters(AO_START_REGISTER, AO_CHANNELS);
+      syncAoChannels(holdingValues);
       clientRef.current = client;
 
       setConnected(true);
@@ -861,6 +887,32 @@ function App() {
                   </span>
                   <span className="text-lg font-bold tabular-nums text-sky-600 dark:text-sky-400">
                     {ch.voltage.toFixed(ch.id < 8 ? 4 : 3)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="mb-1.5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">AO Channels (8)</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+          {aoChannels.map((ch) => (
+            <div
+              key={ch.id}
+              className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 dark:border-slate-700/50 dark:bg-slate-900/60"
+            >
+              <div className="border-b border-slate-200 pb-0.5 text-center text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                {ch.label}
+              </div>
+              <div className="space-y-0.5 pt-0.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-600 font-medium dark:text-slate-300">mV</span>
+                  <span className="text-lg font-bold tabular-nums text-violet-600 dark:text-violet-400">
+                    {Math.trunc(ch.physical)}
                   </span>
                 </div>
               </div>
