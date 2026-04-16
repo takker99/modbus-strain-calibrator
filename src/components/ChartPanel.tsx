@@ -19,6 +19,8 @@ interface ChartPanelProps {
   onYAxisChange: (value: string) => void;
 }
 
+const PlotComponent = ((Plot as unknown as { default?: unknown }).default ?? Plot) as any;
+
 function resolveAxisValue(point: DataPoint, key: string): number {
   if (key === 'time') return point.timestamp;
   if (key.startsWith('raw_')) {
@@ -156,7 +158,12 @@ export function ChartPanel({
             ))}
         </select>
       </div>
-      <Plot data={plotData} layout={plotLayout} config={plotConfig} style={{ width: '100%', height: '300px' }} />
+      <PlotComponent
+        data={plotData}
+        layout={plotLayout}
+        config={plotConfig}
+        style={{ width: '100%', height: '300px' }}
+      />
     </section>
   );
 }
