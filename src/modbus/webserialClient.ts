@@ -147,7 +147,10 @@ export class WebSerialModbusClient {
     // Request port from user
     this.port = await this.serialApi.requestPort();
     const portInfo = this.port.getInfo?.();
-    console.info(`${this.debugPrefix} port selected`, portInfo ?? 'Port info unavailable');
+    console.info(`${this.debugPrefix} port selected`, {
+      portInfo: portInfo ?? null,
+      reason: this.port.getInfo ? undefined : 'method not available',
+    });
 
     // Open with serial settings
     console.info(`${this.debugPrefix} opening port`, this.serialSettings);
@@ -236,10 +239,10 @@ export class WebSerialModbusClient {
     await this.transferMutex.acquire();
     console.debug(`${this.debugPrefix} transfer() mutex acquired`);
 
+    const startTime = Date.now();
     try {
       const writer = this.writer!;
       const reader = this.reader!;
-      const startTime = Date.now();
 
       // Ensure minimum interval between messages (based on Modbus RTU spec and precision mode)
       const now = Date.now();
@@ -322,7 +325,7 @@ export class WebSerialModbusClient {
         expectedLength,
         timeout,
         txLength: frame.length,
-        elapsedMs: Date.now() - this.lastTransferTime,
+        elapsedMs: Date.now() - startTime,
         error: err,
       });
       throw err;
