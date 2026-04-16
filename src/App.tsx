@@ -3,6 +3,7 @@ import { WebSerialModbusClient } from './modbus/webserialClient';
 import {
   AiCalibration,
   AiChannel,
+  AoChannel,
   PollingRateOption,
   DataPoint,
   SerialSettings,
@@ -110,6 +111,14 @@ const createAiChannels = (calibration: AiCalibration[]): AiChannel[] =>
     };
   });
 
+const createAoChannels = (): AoChannel[] =>
+  Array.from({ length: AO_CHANNELS }, (_, channelIndex) => ({
+    id: channelIndex,
+    raw: 0,
+    physical: 0,
+    label: `CH ${channelIndex} (GP8403-${Math.floor(channelIndex / 4)})`,
+  }));
+
 const formatAiChannelDisplayLabel = (idx: number): string =>
   `CH ${idx.toString().padStart(2, '0')} (${idx < 8 ? 'HX711' : 'ADS1115'}-${idx
     .toString(16)
@@ -186,6 +195,7 @@ function App() {
   const [pollingRate, setPollingRate] = useState<PollingRateOption>(POLLING_OPTIONS[0]);
   const [aiCalibration, setAiCalibration] = useState<AiCalibration[]>(loadAiCalibration(AI_CHANNELS));
   const [aiChannels, setAiChannels] = useState<AiChannel[]>(createAiChannels(aiCalibration));
+  const [aoChannels, setAoChannels] = useState<AoChannel[]>(createAoChannels());
   const [connected, setConnected] = useState(false);
   const [acquiring, setAcquiring] = useState(false);
   const [status, setStatus] = useState('Disconnected');
@@ -202,6 +212,7 @@ function App() {
   const [chart4Y, setChart4Y] = useState(initialAxes.chart4.y);
   const clientRef = useRef<WebSerialModbusClient | null>(null);
   const aiRawSourceRef = useRef<number[]>(Array(AI_CHANNELS).fill(0));
+  const aoRawSourceRef = useRef<number[]>(Array(AO_CHANNELS).fill(0));
   const pollTimer = useRef<number | undefined>(undefined);
   const nextPollAtRef = useRef<number>(0);
   const pollingInProgressRef = useRef(false);
@@ -309,6 +320,23 @@ function App() {
     }
   }, []);
 
+  const syncAoChannels = useCallback((values: number[]) => {
+    if (values.length !== AO_CHANNELS) {
+      throw new Error(
+        `Unexpected AO register count: expected ${AO_CHANNELS}, got ${values.length}. Check device AO configuration and Modbus communication.`,
+      );
+    }
+    const normalizedValues = values.map((value) => Math.trunc(value));
+    aoRawSourceRef.current = normalizedValues;
+    setAoChannels((prev) =>
+      prev.map((ch, channelIndex) => ({
+        ...ch,
+        raw: normalizedValues[channelIndex],
+        physical: normalizedValues[channelIndex],
+      })),
+    );
+  }, []);
+
   const updateDataHistory = useCallback(async (aiRaw: number[], aiPhysical: number[]) => {
     const timestamp = Date.now();
     const dataPoint: StoredDataPoint = {
@@ -363,6 +391,7 @@ function App() {
       const aiSourceValues = effectivePrecision === 'extended'
         ? await clientRef.current.readInputRegistersAsFloat32Abcd(AI_FLOAT_START_REGISTER, AI_CHANNELS)
         : await clientRef.current.readInputRegisters(AI_START_REGISTER, AI_CHANNELS);
+      await clientRef.current.writeMultipleHoldingRegisters(AO_START_REGISTER, aoRawSourceRef.current);
       aiRawSourceRef.current = aiSourceValues;
       const aiRaw = aiSourceValues;
       const aiPhysical = aiSourceValues.map((value, idx) =>
@@ -542,6 +571,12 @@ function App() {
         modbusPrecision === 'extended'
       );
       await client.connect();
+      try {
+        const holdingValues = await client.readHoldingRegisters(AO_START_REGISTER, AO_CHANNELS);
+        syncAoChannels(holdingValues);
+      } catch (err) {
+        throw new Error(`Failed to sync AO Holding Registers: ${(err as Error).message}`);
+      }
       clientRef.current = client;
 
       setConnected(true);
@@ -861,6 +896,32 @@ function App() {
                   </span>
                   <span className="text-lg font-bold tabular-nums text-sky-600 dark:text-sky-400">
                     {ch.voltage.toFixed(ch.id < 8 ? 4 : 3)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="mb-1.5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">AO Channels (8)</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+          {aoChannels.map((ch) => (
+            <div
+              key={ch.id}
+              className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 dark:border-slate-700/50 dark:bg-slate-900/60"
+            >
+              <div className="border-b border-slate-200 pb-0.5 text-center text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                {ch.label}
+              </div>
+              <div className="space-y-0.5 pt-0.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-600 dark:text-slate-300">mV</span>
+                  <span className="text-lg font-bold tabular-nums text-violet-600 dark:text-violet-400">
+                    {Math.trunc(ch.physical)}
                   </span>
                 </div>
               </div>

@@ -16,7 +16,8 @@ export type AiChannel = {
 
 export type AoChannel = {
   id: number;
-  voltage: number;
+  raw: number;
+  physical: number;
   label: string;
 };
 
