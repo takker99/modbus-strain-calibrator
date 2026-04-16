@@ -8,10 +8,6 @@ const MENU_ITEMS = [
   { key: 'modbusConfig', label: 'Modbus Config', icon: '🔌', wip: false },
   { key: 'calibration', label: 'Calibration', icon: '⚙', wip: false },
   { key: 'menu1', label: 'Menu 1 (WIP)', icon: '📊', wip: true },
-  { key: 'menu2', label: 'Menu 2 (WIP)', icon: '📈', wip: true },
-  { key: 'menu3', label: 'Menu 3 (WIP)', icon: '🔧', wip: true },
-  { key: 'menu4', label: 'Menu 4 (WIP)', icon: '📋', wip: true },
-  { key: 'menu5', label: 'Menu 5 (WIP)', icon: '💾', wip: true },
 ];
 
 export function HamburgerMenu({
