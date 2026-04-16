@@ -1,6 +1,4 @@
-import { SerialSettings } from '../types';
-
-type ModbusPrecision = 'normal' | 'extended';
+import { ModbusPrecision, SerialSettings } from '../types';
 
 type ModbusConfigPanelProps = {
   open: boolean;
@@ -73,7 +71,11 @@ export function ModbusConfigPanel({
               <input
                 type="number"
                 value={slaveId}
-                onChange={(e) => onSlaveIdChange(parseInt(e.target.value, 10))}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (Number.isNaN(next) || !Number.isInteger(next) || next < 1 || next > 247) return;
+                  onSlaveIdChange(next);
+                }}
                 className="w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 min={1}
                 max={247}

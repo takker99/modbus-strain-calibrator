@@ -6,6 +6,7 @@ import {
   PollingRateOption,
   DataPoint,
   SerialSettings,
+  ModbusPrecision,
 } from './types';
 import {
   aiToPhysical,
@@ -149,8 +150,6 @@ type ChartAxisSelections = {
   chart3: { x: string; y: string };
   chart4: { x: string; y: string };
 };
-
-type ModbusPrecision = 'normal' | 'extended';
 
 const THEME_COOKIE_KEY = 'theme_preference_v1';
 const CHART_AXES_COOKIE_KEY = 'chart_axes_v1';
