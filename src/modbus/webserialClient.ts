@@ -66,16 +66,19 @@ export class WebSerialModbusClient {
 
   /**
    * Calculate minimum message interval based on Modbus RTU specification
-   * with a hard minimum of 10ms.
+   * and precision mode.
    *
    * Modbus RTU requires 3.5 character times of silent interval.
    * For stability, we use 5 character times.
    *
+   * Normal mode: minimum 10ms after each message.
+   * Extended mode: minimum 1ms after each message.
+   *
    * @returns Minimum interval in milliseconds
    */
   private calculateMinInterval(): number {
-    // Always keep at least 10ms between messages
-    const baseIntervalMs = 10;
+    // Base interval depends on precision mode
+    const baseIntervalMs = this.isExtendedPrecision ? 1 : 10;
 
     // Calculate 5 character times based on serial settings
     // 1 character = 1 start bit + data bits + parity bit (if any) + stop bits
