@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { type CSSProperties, type ComponentType, useMemo } from 'react';
+import { type Config, type Data, type Layout } from 'plotly.js';
 import Plot from 'react-plotly.js';
 import { DataPoint } from '../types';
 
@@ -18,6 +19,24 @@ interface ChartPanelProps {
   onXAxisChange: (value: string) => void;
   onYAxisChange: (value: string) => void;
 }
+
+type PlotProps = {
+  data: Data[];
+  layout: Partial<Layout>;
+  config: Partial<Config>;
+  style?: CSSProperties;
+};
+
+const isInteropDefaultExport = (
+  value: unknown,
+): value is { default: ComponentType<PlotProps> } =>
+  typeof value === 'object' && value !== null && 'default' in value;
+
+// react-plotly.js can be returned as either the component itself or { default: component }
+// depending on CJS/ESM interop, which can otherwise cause React runtime error #130.
+const NormalizedPlot: ComponentType<PlotProps> = isInteropDefaultExport(Plot)
+  ? Plot.default
+  : Plot;
 
 function resolveAxisValue(point: DataPoint, key: string): number {
   if (key === 'time') return point.timestamp;
@@ -156,7 +175,12 @@ export function ChartPanel({
             ))}
         </select>
       </div>
-      <Plot data={plotData} layout={plotLayout} config={plotConfig} style={{ width: '100%', height: '300px' }} />
+      <NormalizedPlot
+        data={plotData}
+        layout={plotLayout}
+        config={plotConfig}
+        style={{ width: '100%', height: '300px' }}
+      />
     </section>
   );
 }
