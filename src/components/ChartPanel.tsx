@@ -29,6 +29,10 @@ function resolveAxisValue(point: DataPoint, key: string): number {
     const idx = Number(key.replace('phy_', ''));
     return point.aiPhysical[idx];
   }
+  if (key.startsWith('vlt_')) {
+    const idx = Number(key.replace('vlt_', ''));
+    return point.aiVoltage[idx];
+  }
   return 0;
 }
 
