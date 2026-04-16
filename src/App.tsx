@@ -157,8 +157,8 @@ const axisOptions = [
     label: `phy_${idx.toString().padStart(2, '0')}`
   })),
   ...Array.from({ length: AI_CHANNELS }, (_, idx) => ({
-    key: `ai_vlt_${idx.toString().padStart(2, '0')}`,
-    label: `ai_vlt_${idx.toString().padStart(2, '0')}`
+    key: `vlt_${idx.toString().padStart(2, '0')}`,
+    label: `vlt_${idx.toString().padStart(2, '0')}`
   })),
 ];
 

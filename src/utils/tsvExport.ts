@@ -23,7 +23,7 @@ export function formatTimestamp(timestamp: number): string {
 
 /**
  * Create TSV header row for AI channel data
- * Format: timestamp\tai_raw_00\tai_raw_01\t...\tai_phy_00\tai_phy_01\t...\tai_vlt_00\tai_vlt_01\t...
+ * Format: timestamp\tai_raw_00\tai_raw_01\t...\tai_phy_00\tai_phy_01\t...\tvlt_00\tvlt_01\t...
  * @param channels - Number of AI channels
  * @returns TSV header string with newline
  */
@@ -35,7 +35,7 @@ export function createTsvHeader(channels: number): string {
     `ai_phy_${i.toString().padStart(2, '0')}`
   );
   const vltHeaders = Array.from({ length: channels }, (_, i) =>
-    `ai_vlt_${i.toString().padStart(2, '0')}`
+    `vlt_${i.toString().padStart(2, '0')}`
   );
   return ['timestamp', ...rawHeaders, ...phyHeaders, ...vltHeaders].join('\t') + '\n';
 }
