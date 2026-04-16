@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { WebSerialModbusClient } from './modbus/webserialClient';
 import {
   AiCalibration,
@@ -68,7 +68,6 @@ const POLLING_OPTIONS: PollingRateOption[] = [
 
 const AI_CHANNELS = 16;
 const AO_CHANNELS = 8;  // Used only for initialization
-const SCRIPT_RUNNER_INTERVAL_MS = 500;
 const BAUD_OPTIONS = [4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000, 460800, 921600, 1500000, 2000000];
 const DATA_BITS_OPTIONS: SerialSettings['dataBits'][] = [7, 8];
 const STOP_BITS_OPTIONS: SerialSettings['stopBits'][] = [1, 2];
@@ -183,7 +182,12 @@ const DEFAULT_CHART_AXES: ChartAxisSelections = {
 
 const DEFAULT_SCRIPT = `# get_ai_raw(ch): Read raw AI value for a channel.
 # get_ai_phy(ch): Read calibrated AI value for a channel.
-# set_ao(ch, data): Write AO voltage in V (internally clamped to 0-10V).`;
+# set_ao(ch, data): Write AO voltage in V (internally clamped to 0-10V).
+#
+# To use wait/sleep, do NOT use time.sleep() as it freezes the browser.
+# Use asyncio instead:
+# import asyncio
+# await asyncio.sleep(1)`;
 
 type PyodideInstance = {
   globals: {
@@ -244,7 +248,6 @@ function App() {
   const aiRawSourceRef = useRef<number[]>(Array(AI_CHANNELS).fill(0));
   const aiPhysicalSourceRef = useRef<number[]>(Array(AI_CHANNELS).fill(0));
   const aoRawSourceRef = useRef<number[]>(Array(AO_CHANNELS).fill(0));
-  const scriptTimerRef = useRef<number | undefined>(undefined);
   const scriptExecutingRef = useRef(false);
   const pyodideRef = useRef<PyodideInstance | null>(null);
   const pyodideLoadingRef = useRef<Promise<PyodideInstance> | null>(null);
@@ -475,45 +478,31 @@ function App() {
   }, [getAiRaw, getAiPhysical, setAo, setAoAll]);
 
   const stopScriptRunner = useCallback((nextStatus = 'Stopped') => {
-    if (scriptTimerRef.current !== undefined) {
-      window.clearInterval(scriptTimerRef.current);
-      scriptTimerRef.current = undefined;
-    }
-    scriptExecutingRef.current = false;
     setScriptRunning(false);
     setScriptRunnerStatus(nextStatus);
   }, []);
 
-  const runScriptOnce = useCallback(async () => {
-    if (scriptExecutingRef.current || !pyodideRef.current) return;
-    scriptExecutingRef.current = true;
+  const startScriptRunner = useCallback(async () => {
+    if (scriptExecutingRef.current) return;
     try {
-      await pyodideRef.current.runPythonAsync(scriptCode);
+      setScriptRunnerStatus('Initializing Pyodide...');
+      await ensurePyodideLoaded();
+
+      if (!pyodideRef.current) {
+        throw new Error('Pyodide is not available');
+      }
+
+      setScriptRunning(true);
       setScriptRunnerStatus('Running');
+      scriptExecutingRef.current = true;
+      await pyodideRef.current.runPythonAsync(scriptCode);
+      stopScriptRunner('Completed');
     } catch (err) {
       stopScriptRunner(`Error: ${(err as Error).message}`);
     } finally {
       scriptExecutingRef.current = false;
     }
-  }, [scriptCode, stopScriptRunner]);
-
-  const startScriptRunner = useCallback(async () => {
-    try {
-      setScriptRunnerStatus('Initializing Pyodide...');
-      await ensurePyodideLoaded();
-      if (scriptTimerRef.current !== undefined) {
-        window.clearInterval(scriptTimerRef.current);
-      }
-      setScriptRunning(true);
-      setScriptRunnerStatus('Running');
-      scriptTimerRef.current = window.setInterval(() => {
-        void runScriptOnce();
-      }, SCRIPT_RUNNER_INTERVAL_MS);
-      void runScriptOnce();
-    } catch (err) {
-      stopScriptRunner(`Error: ${(err as Error).message}`);
-    }
-  }, [ensurePyodideLoaded, runScriptOnce, stopScriptRunner]);
+  }, [ensurePyodideLoaded, scriptCode, stopScriptRunner]);
 
   const handleToggleScriptRunner = useCallback(() => {
     if (scriptRunning) {
@@ -522,6 +511,85 @@ function App() {
     }
     void startScriptRunner();
   }, [scriptRunning, startScriptRunner, stopScriptRunner]);
+
+  const handleScriptEditorKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Tab') return;
+
+    event.preventDefault();
+
+    const textarea = event.currentTarget;
+    const value = textarea.value;
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const lineStartIndex = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    const hasSelection = selectionStart !== selectionEnd;
+    const indent = '  ';
+
+    if (!event.shiftKey) {
+      if (!hasSelection) {
+        const nextValue = `${value.slice(0, selectionStart)}${indent}${value.slice(selectionEnd)}`;
+        setScriptCode(nextValue);
+        window.requestAnimationFrame(() => {
+          const nextCursor = selectionStart + indent.length;
+          textarea.setSelectionRange(nextCursor, nextCursor);
+        });
+        return;
+      }
+
+      const blockStart = lineStartIndex;
+      const blockEnd = selectionEnd;
+      const block = value.slice(blockStart, blockEnd);
+      const indentedBlock = block
+        .split('\n')
+        .map((line) => (!line.trim() ? line : `${indent}${line}`))
+        .join('\n');
+      const nextValue = `${value.slice(0, blockStart)}${indentedBlock}${value.slice(blockEnd)}`;
+      setScriptCode(nextValue);
+      window.requestAnimationFrame(() => {
+        const selectionEndOffset = indentedBlock.length - block.length;
+        textarea.setSelectionRange(selectionStart + indent.length, selectionEnd + selectionEndOffset);
+      });
+      return;
+    }
+
+    const blockStart = lineStartIndex;
+    const nextLineBreak = value.indexOf('\n', selectionStart);
+    let blockEnd = selectionEnd;
+    if (!hasSelection) {
+      blockEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
+    }
+    const block = value.slice(blockStart, blockEnd);
+    const lines = block.split('\n');
+
+    let removedFromFirstLine = 0;
+    let removedTotal = 0;
+    const outdentedBlock = lines.map((line, idx) => {
+      let removeCount = 0;
+      if (line.startsWith(indent)) {
+        removeCount = indent.length;
+      } else if (line.startsWith(' ')) {
+        removeCount = 1;
+      }
+      if (idx === 0) {
+        removedFromFirstLine = removeCount;
+      }
+      removedTotal += removeCount;
+      return line.slice(removeCount);
+    }).join('\n');
+
+    const nextValue = `${value.slice(0, blockStart)}${outdentedBlock}${value.slice(blockEnd)}`;
+    setScriptCode(nextValue);
+    window.requestAnimationFrame(() => {
+      if (!hasSelection) {
+        const nextCursor = Math.max(lineStartIndex, selectionStart - removedFromFirstLine);
+        textarea.setSelectionRange(nextCursor, nextCursor);
+        return;
+      }
+      const nextStart = Math.max(lineStartIndex, selectionStart - removedFromFirstLine);
+      const nextEnd = Math.max(nextStart, selectionEnd - removedTotal);
+      textarea.setSelectionRange(nextStart, nextEnd);
+    });
+  }, [setScriptCode]);
 
   const updateDataHistory = useCallback(async (aiRaw: number[], aiPhysical: number[], aiVoltage: number[]) => {
     const timestamp = Date.now();
@@ -774,14 +842,6 @@ function App() {
     }
     return () => stopPolling();
   }, [acquiring, startPolling, stopPolling]);
-
-  useEffect(() => {
-    return () => {
-      if (scriptTimerRef.current !== undefined) {
-        window.clearInterval(scriptTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -1203,7 +1263,7 @@ function App() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <ChartPanel
           title="Chart 1"
           color="#34d399"
@@ -1226,7 +1286,7 @@ function App() {
           onXAxisChange={setChart2X}
           onYAxisChange={setChart2Y}
         />
-        <section className="card space-y-2 md:col-span-2 xl:col-span-2">
+        <section className="card space-y-2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-amber-400">ScriptRunner (Pyodide)</h2>
             <button type="button" className="button-primary" onClick={handleToggleScriptRunner}>
@@ -1237,7 +1297,8 @@ function App() {
           <textarea
             value={scriptCode}
             onChange={(e) => setScriptCode(e.target.value)}
-            className="min-h-[280px] w-full rounded border border-slate-300 bg-white p-2 font-mono text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            onKeyDown={handleScriptEditorKeyDown}
+            className="min-h-[240px] w-full rounded border border-slate-300 bg-white p-2 font-mono text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             spellCheck={false}
           />
         </section>
