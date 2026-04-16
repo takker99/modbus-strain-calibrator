@@ -111,7 +111,7 @@ const createAiChannels = (calibration: AiCalibration[]): AiChannel[] =>
   });
 
 const formatAiChannelDisplayLabel = (idx: number): string =>
-  `CH ${idx.toString().padStart(2, '0')}(${idx < 8 ? 'HX711' : 'ADS1115'}-${idx
+  `CH ${idx.toString().padStart(2, '0')} (${idx < 8 ? 'HX711' : 'ADS1115'}-${idx
     .toString(16)
     .toUpperCase()})`;
 
