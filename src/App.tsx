@@ -591,8 +591,15 @@ function App() {
       }
 
       setStatus('Polling');
+      console.debug('[App] pollOnce success', {
+        effectivePrecision,
+        aiCount: aiSourceValues.length,
+        aiPreview: aiSourceValues.slice(0, 10),
+        aoCount: aoRawSourceRef.current.length,
+        aoPreview: aoRawSourceRef.current.slice(0, 10),
+      });
     } catch (err) {
-      console.error(err);
+      console.error('[App] pollOnce failed', err);
       setStatus((err as Error).message);
     }
   }, [aiCalibration, modbusPrecision, updateDataHistory]);
@@ -713,6 +720,12 @@ function App() {
   }, [scheduleImmediatePoll]);
 
   const handleConnect = async () => {
+    console.info('[App] handleConnect start', {
+      slaveId,
+      serialSettings,
+      modbusPrecision,
+      connected,
+    });
     try {
       // Clean up any existing connection first
       if (clientRef.current) {
@@ -736,10 +749,17 @@ function App() {
         modbusPrecision === 'extended'
       );
       await client.connect();
+      console.info('[App] Modbus connect success');
       try {
+        console.info('[App] Sync AO holding registers start', {
+          startRegister: AO_START_REGISTER,
+          channels: AO_CHANNELS,
+        });
         const holdingValues = await client.readHoldingRegisters(AO_START_REGISTER, AO_CHANNELS);
+        console.info('[App] Sync AO holding registers success', { holdingValues });
         syncAoChannels(holdingValues);
       } catch (err) {
+        console.error('[App] Sync AO holding registers failed', err);
         throw new Error(`Failed to sync AO Holding Registers: ${(err as Error).message}`);
       }
       clientRef.current = client;
@@ -748,7 +768,9 @@ function App() {
       setAcquiring(true);
       setStatus(`Connected @ ${formatSerialSettings(serialSettings)}`);
       await requestWakeLock();
+      console.info('[App] handleConnect complete');
     } catch (err) {
+      console.error('[App] handleConnect failed', err);
       // Clean up on error
       if (clientRef.current) {
         await clientRef.current.disconnect();
@@ -767,6 +789,7 @@ function App() {
   };
 
   const handleDisconnect = async () => {
+    console.info('[App] handleDisconnect start');
     stopScriptRunner('Stopped');
     setAcquiring(false);
     stopPolling();
@@ -780,12 +803,14 @@ function App() {
       // Clear IndexedDB on disconnect
       await dataStorage.clearAllData();
       setDataPoints([]);
+      console.info('[App] handleDisconnect data/session cleanup complete');
     } catch (err) {
       console.error('Error during disconnect:', err);
     } finally {
       await releaseWakeLock();
       setConnected(false);
       setStatus('Disconnected');
+      console.info('[App] handleDisconnect complete');
     }
   };
 
