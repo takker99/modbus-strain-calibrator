@@ -521,7 +521,7 @@ function App() {
     const value = textarea.value;
     const selectionStart = textarea.selectionStart;
     const selectionEnd = textarea.selectionEnd;
-    const lineStart = value.lastIndexOf('\n', Math.max(0, selectionStart - 1)) + 1;
+    const lineStartIndex = value.lastIndexOf('\n', selectionStart - 1) + 1;
     const hasSelection = selectionStart !== selectionEnd;
     const indent = '  ';
 
@@ -536,28 +536,40 @@ function App() {
         return;
       }
 
-      const blockStart = lineStart;
+      const blockStart = lineStartIndex;
       const blockEnd = selectionEnd;
       const block = value.slice(blockStart, blockEnd);
-      const lineCount = block.split('\n').length;
-      const indentedBlock = block.split('\n').map((line) => `${indent}${line}`).join('\n');
+      const indentedBlock = block
+        .split('\n')
+        .map((line) => (!line.trim() ? line : `${indent}${line}`))
+        .join('\n');
       const nextValue = `${value.slice(0, blockStart)}${indentedBlock}${value.slice(blockEnd)}`;
       setScriptCode(nextValue);
       window.requestAnimationFrame(() => {
-        textarea.setSelectionRange(selectionStart + indent.length, selectionEnd + indent.length * lineCount);
+        const selectionEndOffset = indentedBlock.length - block.length;
+        textarea.setSelectionRange(selectionStart + indent.length, selectionEnd + selectionEndOffset);
       });
       return;
     }
 
-    const blockStart = lineStart;
-    const blockEnd = hasSelection ? selectionEnd : value.indexOf('\n', selectionStart) === -1 ? value.length : value.indexOf('\n', selectionStart);
+    const blockStart = lineStartIndex;
+    const nextLineBreak = value.indexOf('\n', selectionStart);
+    let blockEnd = selectionEnd;
+    if (!hasSelection) {
+      blockEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
+    }
     const block = value.slice(blockStart, blockEnd);
     const lines = block.split('\n');
 
     let removedFromFirstLine = 0;
     let removedTotal = 0;
     const outdentedBlock = lines.map((line, idx) => {
-      const removeCount = line.startsWith(indent) ? indent.length : line.startsWith(' ') ? 1 : 0;
+      let removeCount = 0;
+      if (line.startsWith(indent)) {
+        removeCount = indent.length;
+      } else if (line.startsWith(' ')) {
+        removeCount = 1;
+      }
       if (idx === 0) {
         removedFromFirstLine = removeCount;
       }
@@ -569,15 +581,15 @@ function App() {
     setScriptCode(nextValue);
     window.requestAnimationFrame(() => {
       if (!hasSelection) {
-        const nextCursor = Math.max(lineStart, selectionStart - removedFromFirstLine);
+        const nextCursor = Math.max(lineStartIndex, selectionStart - removedFromFirstLine);
         textarea.setSelectionRange(nextCursor, nextCursor);
         return;
       }
-      const nextStart = Math.max(lineStart, selectionStart - removedFromFirstLine);
+      const nextStart = Math.max(lineStartIndex, selectionStart - removedFromFirstLine);
       const nextEnd = Math.max(nextStart, selectionEnd - removedTotal);
       textarea.setSelectionRange(nextStart, nextEnd);
     });
-  }, []);
+  }, [setScriptCode]);
 
   const updateDataHistory = useCallback(async (aiRaw: number[], aiPhysical: number[], aiVoltage: number[]) => {
     const timestamp = Date.now();
