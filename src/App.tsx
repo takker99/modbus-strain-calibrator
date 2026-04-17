@@ -198,7 +198,7 @@ const DEFAULT_SCRIPT = `# get_ai_raw(ch): Read raw AI value for a channel.
 # set_ao(ch, data): Write AO voltage in V (internally clamped to 0-10V).
 #
 # To use wait/sleep, do NOT use time.sleep() as it freezes the browser.
-# Top-level await is available in this runner.
+# This runner executes scripts in an async context (top-level await supported).
 # Use asyncio instead:
 # import asyncio
 # await asyncio.sleep(1)`;
