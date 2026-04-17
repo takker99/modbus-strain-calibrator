@@ -7,7 +7,7 @@ const DB_NAME = 'ModbusLoggerDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'dataPoints';
 const MAX_POINTS_IN_MEMORY = 256;
-const MAX_POINTS_WHILE_SAVING = 65535;
+const MAX_POINTS_WHILE_SAVING = 65536;
 
 export type StoredDataPoint = {
   id?: number;
