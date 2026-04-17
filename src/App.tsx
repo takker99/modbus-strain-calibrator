@@ -666,12 +666,14 @@ function App() {
       );
       const aiVoltage = aiRaw.map((raw, idx) => computeSensorValues(raw, idx).voltage);
       aiPhysicalSourceRef.current = aiPhysical;
-      if (aiRawShareRef.current && aiPhysicalShareRef.current) {
+      const aiRawShare = aiRawShareRef.current;
+      const aiPhysicalShare = aiPhysicalShareRef.current;
+      if (aiRawShare && aiPhysicalShare) {
         aiRaw.forEach((value, index) => {
-          aiRawShareRef.current![index] = value;
+          aiRawShare[index] = value;
         });
         aiPhysical.forEach((value, index) => {
-          aiPhysicalShareRef.current![index] = value;
+          aiPhysicalShare[index] = value;
         });
       }
 
@@ -854,11 +856,13 @@ function App() {
     return () => stopPolling();
   }, [acquiring, startPolling, stopPolling]);
 
-  useEffect(() => () => {
-    if (pyWorkerRef.current) {
-      pyWorkerRef.current.terminate();
-      pyWorkerRef.current = null;
-    }
+  useEffect(() => {
+    return () => {
+      if (pyWorkerRef.current) {
+        pyWorkerRef.current.terminate();
+        pyWorkerRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {

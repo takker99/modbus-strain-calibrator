@@ -22,8 +22,13 @@ let running = false;
 let aiRawShare: Float64Array | null = null;
 let aiPhysicalShare: Float64Array | null = null;
 let interruptBuffer: Uint8Array | null = null;
+let sleepWaitBuffer: Int32Array | null = null;
 
-const sleepWaitBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT));
+const PYTHON_SLEEP_PATCH = `
+import time
+from js import sleep_with_interrupt
+time.sleep = sleep_with_interrupt
+`;
 
 const postWorkerMessage = (message: Record<string, unknown>) => {
   self.postMessage(message);
@@ -48,7 +53,7 @@ const sleepWithInterrupt = (sec: number) => {
   while (Date.now() < endAt) {
     py.checkInterrupt();
     const waitMs = Math.min(50, Math.max(0, endAt - Date.now()));
-    if (waitMs > 0) {
+    if (waitMs > 0 && sleepWaitBuffer) {
       Atomics.wait(sleepWaitBuffer, 0, 0, waitMs);
     }
   }
@@ -61,6 +66,7 @@ const initializePyodide = async (rawSab: SharedArrayBuffer, phySab: SharedArrayB
   aiRawShare = new Float64Array(rawSab);
   aiPhysicalShare = new Float64Array(phySab);
   interruptBuffer = new Uint8Array(intSab);
+  sleepWaitBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT));
 
   pyodide = await loadPyodide({
     indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.27.5/full/',
@@ -82,11 +88,7 @@ const initializePyodide = async (rawSab: SharedArrayBuffer, phySab: SharedArrayB
     });
   });
 
-  pyodide.runPython(`
-import time
-from js import sleep_with_interrupt
-time.sleep = sleep_with_interrupt
-`);
+  pyodide.runPython(PYTHON_SLEEP_PATCH);
 
   postWorkerMessage({ type: 'status', message: 'Ready' });
 };
