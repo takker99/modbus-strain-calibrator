@@ -66,6 +66,12 @@ export function ChartPanel({
   onXAxisChange,
   onYAxisChange,
 }: ChartPanelProps) {
+  const isWebGLAvailable = useMemo(() => {
+    if (typeof document === 'undefined') return false;
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+  }, []);
+
   const palette = useMemo(
     () =>
       isDarkMode
@@ -148,6 +154,9 @@ export function ChartPanel({
         }`}>
           {title}
         </h2>
+        <span className={`text-xs ${isWebGLAvailable ? 'text-emerald-500' : 'text-amber-500'}`}>
+          GPU(WebGL): {isWebGLAvailable ? 'ON' : 'OFF'}
+        </span>
         <span className="text-xs text-slate-400">X:</span>
         <select
           value={xAxis}
