@@ -279,7 +279,11 @@ export class WebSerialModbusClient {
         } catch {
           // Ignore lock release errors during flush.
         }
-        this.reader = this.port.readable.getReader();
+        if (this.port.readable) {
+          this.reader = this.port.readable.getReader();
+        } else {
+          this.reader = null;
+        }
         break;
       }
 
