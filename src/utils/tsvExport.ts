@@ -142,10 +142,10 @@ export class TsvWriter {
     return this.fileName;
   }
 
-  private assertChannelCount(name: 'raw values' | 'physical values' | 'voltage values', values: number[]): void {
+  private assertChannelCount(fieldLabel: 'raw values' | 'physical values' | 'voltage values', values: number[]): void {
     if (values.length !== this.channels) {
       throw new Error(
-        `Invalid ${name} column count: expected ${this.channels}, got ${values.length}.`,
+        `Invalid ${fieldLabel} column count: expected ${this.channels}, got ${values.length}.`,
       );
     }
   }
