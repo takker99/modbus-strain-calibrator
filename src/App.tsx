@@ -427,7 +427,7 @@ function App() {
         const rawValue = aiRawSourceRef.current[idx] ?? ch.raw;
         const physical = aiToPhysical(rawValue, calibration[idx] ?? { a: 0, b: 1, c: 0 });
         const { voltage, microStrain } = computeSensorValues(rawValue, idx);
-        return { ...ch, physical, status: getAiStatus(rawValue), voltage, microStrain };
+        return { ...ch, raw: rawValue, physical, status: getAiStatus(rawValue), voltage, microStrain };
       }),
     [],
   );
