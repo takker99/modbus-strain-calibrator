@@ -71,35 +71,36 @@ export function CalibrationPanel({
       title="AI Calibration"
       subtitle="a·x² + b·x + c = y"
       maxWidth="max-w-sm"
+      headerActions={
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onLoadCalibration(file);
+              e.target.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
+          >
+            Load
+          </button>
+          <button
+            type="button"
+            onClick={onSaveCalibration}
+            className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
+          >
+            Save
+          </button>
+        </>
+      }
     >
-      <div className="flex items-center gap-2 px-4 pb-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onLoadCalibration(file);
-            e.target.value = '';
-          }}
-          style={{ display: 'none' }}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
-        >
-          Load
-        </button>
-        <button
-          type="button"
-          onClick={onSaveCalibration}
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
-        >
-          Save
-        </button>
-      </div>
-
       <div className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1.5">
           {aiCalibration.map((cal, idx) => (
