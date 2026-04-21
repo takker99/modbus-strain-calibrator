@@ -9,8 +9,6 @@
     "preview": "bunx vite preview"
   },
   "dependencies": {
-    "buffer": "^6.0.3",
-    "modbus-serial": "^8.0.25",
     "plotly.js": "^3.5.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

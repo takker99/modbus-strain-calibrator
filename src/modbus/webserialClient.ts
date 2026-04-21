@@ -2,8 +2,7 @@
  * Web Serial API transport using modbus-serial helpers for CRC16.
  * Designed for CDC-ACM USB-Serial converters that work with OS drivers.
  */
-import { Buffer } from 'buffer';
-import crc16 from 'modbus-serial/utils/crc16';
+import { crc16 } from '../utils/crc16';
 import { SerialSettings } from '../types';
 
 /**
@@ -164,9 +163,7 @@ export class WebSerialModbusClient {
     // Request port from user
     this.port = await this.serialApi.requestPort();
     const portInfo = this.port.getInfo?.();
-    const portInfoReason = portInfo === undefined
-      ? (this.port.getInfo ? 'no info from getInfo()' : 'method not available')
-      : undefined;
+    const portInfoReason = portInfo === undefined ? 'no info from getInfo()' : undefined;
     console.info(`${this.debugPrefix} port selected`, {
       portInfo: portInfo ?? null,
       reason: portInfoReason,
@@ -235,7 +232,7 @@ export class WebSerialModbusClient {
 
   private buildFrame(functionCode: number, payload: number[]): Uint8Array {
     const frame = [this.slaveId, functionCode, ...payload];
-    const crc = crc16(Buffer.from(frame));
+    const crc = crc16(frame);
     frame.push(crc & 0xff, (crc >> 8) & 0xff);
     const rawFrame = new Uint8Array(frame);
     const logData: Record<string, unknown> = {
@@ -429,7 +426,7 @@ export class WebSerialModbusClient {
 
       const dataWithoutCrc = responseArray.slice(0, -2);
       const receivedCrc = responseArray[responseArray.length - 2] | (responseArray[responseArray.length - 1] << 8);
-      const calculatedCrc = crc16(Buffer.from(dataWithoutCrc));
+      const calculatedCrc = crc16(dataWithoutCrc);
 
       if (receivedCrc !== calculatedCrc) {
         console.error(`${this.debugPrefix} transfer() CRC mismatch`, {
@@ -459,6 +456,16 @@ export class WebSerialModbusClient {
         await this.flushReceiveBuffer();
       } catch (flushErr) {
         console.warn(`${this.debugPrefix} transfer() flush after error failed`, flushErr);
+        if (this.reader && this.port?.readable) {
+          try { await this.reader.cancel(); } catch { /* ignore */ }
+          try { this.reader.releaseLock(); } catch { /* ignore */ }
+          try {
+            this.reader = this.port.readable.getReader();
+          } catch {
+            this.reader = null;
+            await this.disconnect();
+          }
+        }
       }
       throw err;
     } finally {
