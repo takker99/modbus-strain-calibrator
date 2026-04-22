@@ -1180,7 +1180,7 @@ function App() {
                 {connected ? 'Disconnect' : 'Connect'}
               </button>
               {!tsvWriterRef.current ? (
-                <button type="button" className="button-primary" onClick={handleStartSave}>
+                <button type="button" className={connected ? 'button-primary' : 'button-secondary opacity-60 cursor-not-allowed'} onClick={connected ? handleStartSave : undefined} disabled={!connected}>
                   Start Save
                 </button>
               ) : (

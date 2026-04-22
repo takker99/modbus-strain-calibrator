@@ -140,7 +140,9 @@ export async function createTsvWriter(
     throw new Error('File System Access API not supported in this browser');
   }
 
-  const filename = suggestedName ?? `modbus-log-${new Date().toISOString().replace(/[:.]/g, '-')}.tsv`;
+  const now = new Date();
+  const defaultName = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.tsv`;
+  const filename = suggestedName ?? defaultName;
 
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: filename,
