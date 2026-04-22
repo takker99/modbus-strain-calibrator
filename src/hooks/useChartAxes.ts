@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { readJsonCookie, writeJsonCookie } from '../utils/cookies';
 
 type ChartAxisSelections = {

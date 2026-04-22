@@ -65,7 +65,6 @@ export const readJsonCookie = <T extends JsonValue>(key: string): T | null => {
   }
 };
 
-export const writeJsonCookie = (key: string, value: JsonValue, _maxAgeSeconds = ONE_YEAR_SECONDS): void => {
-  // Redirect to localStorage
+export const writeJsonCookie = (key: string, value: JsonValue): void => {
   writeJsonStorage(key, value);
 };

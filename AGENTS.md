@@ -66,9 +66,23 @@ public/
 - タイムアウト時の Reader リカバリ（cancel → releaseLock → reacquire）
 - サポート Function Code: 1, 3, 4, 5, 6, 15, 16
 
+### USB転送間隔制約（重要）
+
+USB Serial変換IC（CH340, FT232等）経由で UART→ModbusRTU を受信するデバイスでは、
+USBパケット遅延・詰まりによる通信エラーを防ぐため、**Modbus RTU フレーム送信間に
+最低10msの間隔が必須**。
+
+- `webserialClient.ts` の `transfer()` 内の `minMessageIntervalMs` がこれを担保（Normal: 10ms / Extended: 1ms）
+- **この制約をアプリケーション層で再実装してはならない**（`transfer()` が単一責任）
+- `constants.ts` に追加の Wait 定数を定義しないこと（`transfer()` の待機と二重になる）
+- AO書込みを非ブロック化する場合も、`transfer()` の `AsyncMutex` により AI/AO 送信間の最低間隔が自動保証される
+- AO書込みは `doAoWriteAsync` で独立実行され、`aoWriteInProgressRef` で二重投入を防止する
+
 ### ポーリング（`App.tsx`）
-- 200ms〜5分の定期ポーリング（`setTimeout` 再帰スケジュール）
+- 100ms〜5分の定期ポーリング（`setTimeout` 再帰スケジュール）
+- **`pollOnce` は AI 読取りのみをブロック** — AO 書込みは `doAoWriteAsync` で非ブロック実行
 - AI 読取り / AO 書込みそれぞれ独立のリトライレート制限（60s ウィンドウ内最大10回）
+- **IndexedDB 書き込みは fire-and-forget**（`updateDataHistory` は同期関数、`.catch()` でエラーハンドリング）
 - チャート表示ポイント上限: 通常 256 / 保存中 65536
 - ペンドデータポイントのバッチフラッシュ（5件 or 100ms ごと）
 - `pageshow` / `visibilitychange` による復帰時即時ポーリング（`acquiring` 状態を ref で確認）
@@ -119,6 +133,11 @@ public/
 | `AI_START_REGISTER` | 0 | AI Input Register 開始アドレス（Normal） |
 | `AI_FLOAT_START_REGISTER` | 5000 | AI Input Register 開始アドレス（Extended） |
 | `AO_START_REGISTER` | 0 | AO Holding Register 開始アドレス |
+| `RETRY_DELAY_MS` | 10 | Modbus 通信リトライ前の待機時間 |
+| `INPUT_READ_RETRY_WINDOW_MS` | 60000 | AI 読取りリトライ制限の評価ウィンドウ |
+| `INPUT_READ_MAX_FAILURES_PER_WINDOW` | 10 | ウィンドウ内 AI 読取り最大失敗回数 |
+| `OUTPUT_HOLDING_RETRY_WINDOW_MS` | 60000 | AO 書込みリトライ制限の評価ウィンドウ |
+| `OUTPUT_HOLDING_MAX_FAILURES_PER_WINDOW` | 10 | ウィンドウ内 AO 書込み最大失敗回数 |
 | `MAX_POINTS_IN_MEMORY` | 256 | 通常時のチャート表示上限 |
 | `MAX_POINTS_WHILE_SAVING` | 65536 | 保存中のチャート表示上限 |
 | `BATCH_FLUSH_THRESHOLD` | 5 | バッチフラッシュのペンド件数閾値 |

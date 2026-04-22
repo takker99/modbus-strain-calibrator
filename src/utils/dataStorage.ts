@@ -119,4 +119,3 @@ class DataStorage {
 }
 
 export const dataStorage = new DataStorage();
-export { MAX_POINTS_IN_MEMORY, MAX_POINTS_WHILE_SAVING };

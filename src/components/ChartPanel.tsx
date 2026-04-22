@@ -56,10 +56,6 @@ function resolveAxisValue(point: DataPoint, desc: AxisDescriptor): number {
   }
 }
 
-function toNumberArray(data: Float32Array | number[]): number[] {
-  return data instanceof Float32Array ? Array.from(data) : data;
-}
-
 export function ChartPanel({
   color,
   dataPoints,

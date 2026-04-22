@@ -17,8 +17,6 @@ import {
   AI_FLOAT_START_REGISTER,
   AO_START_REGISTER,
   RETRY_DELAY_MS,
-  MIN_AI_TO_AO_INTERVAL_MS,
-  MIN_AI_TO_NEXT_AI_INTERVAL_MS,
   INPUT_READ_RETRY_WINDOW_MS,
   INPUT_READ_MAX_FAILURES_PER_WINDOW,
   OUTPUT_HOLDING_RETRY_WINDOW_MS,
@@ -73,6 +71,7 @@ const serial: Serial = shouldUsePolyfill ? serialPolyfill as unknown as Serial :
 const serialTransportLabel = shouldUsePolyfill ? 'WebUSB' : 'WebSerial';
 
 const POLLING_OPTIONS: PollingRateOption[] = [
+  { label: '50 ms', valueMs: 50 },
   { label: '100 ms', valueMs: 100 },
   { label: '200 ms', valueMs: 200 },
   { label: '500 ms', valueMs: 500 },
@@ -241,6 +240,8 @@ function App() {
   const connectInProgressRef = useRef(false);
   const acquiringRef = useRef(false);
   const aiCalibrationRef = useRef<AiCalibration[]>(aiCalibration);
+  const aoWriteInProgressRef = useRef(false);
+  const idealScheduleRef = useRef(0);
   const dataBufferRef = useRef<DataPoint[]>([]);
   const statusRef = useRef<HTMLParagraphElement>(null);
 
@@ -434,7 +435,7 @@ function App() {
     });
   }, [scriptRunner]);
 
-  const updateDataHistory = useCallback(async (aiRaw: Float32Array, aiPhysical: Float32Array) => {
+  const updateDataHistory = useCallback((aiRaw: Float32Array, aiPhysical: Float32Array) => {
     const timestamp = Date.now();
     const seq = seqCounterRef.current++;
     const dataPoint: StoredDataPoint = {
@@ -444,47 +445,47 @@ function App() {
       aiPhysical: Array.from(aiPhysical),
     };
 
-    try {
-      await dataStorage.addDataPoint(dataPoint);
-
-      keepLatestCountRef.current++;
-      if (keepLatestCountRef.current % KEEP_LATEST_TRIM_INTERVAL === 0) {
-        const displayLimit = tsvWriterRef.current ? MAX_POINTS_WHILE_SAVING : MAX_POINTS_IN_MEMORY;
-        await dataStorage.keepLatestPoints(displayLimit);
-      }
-
-      pendingDataPoints.current.push({
-        seq,
-        timestamp,
-        aiRaw,
-        aiPhysical,
-      });
-
-      const ts = recentTimestampsRef.current;
-      ts.push(timestamp);
-      if (ts.length > 20) ts.splice(0, ts.length - 20);
-      if (ts.length >= 2) {
-        const elapsed = ts[ts.length - 1] - ts[0];
-        if (elapsed > 0) {
-          setActualRateHz(Math.round(((ts.length - 1) / elapsed) * 1000 * 10) / 10);
-        }
-      }
-
-      if (pendingDataPoints.current.length >= BATCH_FLUSH_THRESHOLD) {
-        if (batchUpdateTimer.current !== undefined) {
-          window.clearTimeout(batchUpdateTimer.current);
-          batchUpdateTimer.current = undefined;
-        }
-        flushPendingDataPoints();
-      } else if (batchUpdateTimer.current === undefined) {
-        batchUpdateTimer.current = window.setTimeout(() => {
-          batchUpdateTimer.current = undefined;
-          flushPendingDataPoints();
-        }, BATCH_FLUSH_INTERVAL_MS);
-      }
-    } catch (err) {
-      console.error('Error updating data history:', err);
+    dataStorage.addDataPoint(dataPoint).catch((err) => {
+      console.error('Error adding data point:', err);
       setStatus(`IndexedDB error: ${(err as Error).message}`);
+    });
+
+    keepLatestCountRef.current++;
+    if (keepLatestCountRef.current % KEEP_LATEST_TRIM_INTERVAL === 0) {
+      const displayLimit = tsvWriterRef.current ? MAX_POINTS_WHILE_SAVING : MAX_POINTS_IN_MEMORY;
+      dataStorage.keepLatestPoints(displayLimit).catch((err) => {
+        console.error('Error trimming data points:', err);
+      });
+    }
+
+    pendingDataPoints.current.push({
+      seq,
+      timestamp,
+      aiRaw,
+      aiPhysical,
+    });
+
+    const ts = recentTimestampsRef.current;
+    ts.push(timestamp);
+    if (ts.length > 40) ts.splice(0, ts.length - 40);
+    if (ts.length >= 2) {
+      const elapsed = ts[ts.length - 1] - ts[0];
+      if (elapsed > 0) {
+        setActualRateHz(Math.round(((ts.length - 1) / elapsed) * 1000 * 10) / 10);
+      }
+    }
+
+    if (pendingDataPoints.current.length >= BATCH_FLUSH_THRESHOLD) {
+      if (batchUpdateTimer.current !== undefined) {
+        window.clearTimeout(batchUpdateTimer.current);
+        batchUpdateTimer.current = undefined;
+      }
+      flushPendingDataPoints();
+    } else if (batchUpdateTimer.current === undefined) {
+      batchUpdateTimer.current = window.setTimeout(() => {
+        batchUpdateTimer.current = undefined;
+        flushPendingDataPoints();
+      }, BATCH_FLUSH_INTERVAL_MS);
     }
   }, [flushPendingDataPoints, setStatus]);
 
@@ -492,14 +493,6 @@ function App() {
     if (ms <= 0) return;
     await new Promise((resolve) => window.setTimeout(resolve, ms));
   }, []);
-
-  const waitAfterTimestamp = useCallback(async (timestampMs: number, minimumDelayMs: number) => {
-    if (timestampMs <= 0 || minimumDelayMs <= 0) return;
-    const elapsed = Date.now() - timestampMs;
-    if (elapsed < minimumDelayMs) {
-      await waitMs(minimumDelayMs - elapsed);
-    }
-  }, [waitMs]);
 
   const pruneFailuresInWindow = useCallback((timestampsRef: { current: number[] }, windowMs: number) => {
     const now = Date.now();
@@ -509,7 +502,7 @@ function App() {
 
   const enqueueDisplayUpdate = useCallback((aiRaw: Float32Array, aiPhysical: Float32Array) => {
     displayUpdateChainRef.current = displayUpdateChainRef.current
-      .then(async () => {
+      .then(() => {
         setAiChannels((prev) =>
           prev.map((ch, idx) => {
             const rawValue = aiRaw[idx] ?? ch.raw;
@@ -524,7 +517,7 @@ function App() {
             };
           }),
         );
-        await updateDataHistory(aiRaw, aiPhysical);
+        updateDataHistory(aiRaw, aiPhysical);
       })
       .catch((err) => {
         console.error('[App] display update event failed', err);
@@ -561,63 +554,93 @@ function App() {
     }
   }, [setStatus]);
 
+  const doAoWriteAsync = useCallback(async () => {
+    if (aoWriteInProgressRef.current) return;
+    const currentAoRaw = aoRawSourceRef.current;
+    if (!hasAoValuesChanged(lastSentAoRawRef.current, currentAoRaw)) return;
+    if (!clientRef.current) return;
+
+    const failureCount = pruneFailuresInWindow(
+      outputHoldingFailureTimestampsRef,
+      OUTPUT_HOLDING_RETRY_WINDOW_MS,
+    );
+    if (failureCount >= OUTPUT_HOLDING_MAX_FAILURES_PER_WINDOW) {
+      console.warn('[App] AO write skipped due to retry limit', {
+        failureCount: outputHoldingFailureTimestampsRef.current.length,
+      });
+      return;
+    }
+
+    aoWriteInProgressRef.current = true;
+    try {
+      const latest = aoRawSourceRef.current;
+      await clientRef.current.writeMultipleHoldingRegisters(AO_START_REGISTER, latest);
+      lastSentAoRawRef.current = [...latest];
+    } catch (writeError) {
+      outputHoldingFailureTimestampsRef.current.push(Date.now());
+      const normalizedWriteError =
+        writeError instanceof Error ? writeError : new Error(String(writeError));
+      console.warn('[App] AO write failed; retrying once', normalizedWriteError);
+      try {
+        await waitMs(RETRY_DELAY_MS);
+        const latest = aoRawSourceRef.current;
+        await clientRef.current.writeMultipleHoldingRegisters(AO_START_REGISTER, latest);
+        lastSentAoRawRef.current = [...latest];
+      } catch (retryError) {
+        outputHoldingFailureTimestampsRef.current.push(Date.now());
+        const normalizedRetryError =
+          retryError instanceof Error ? retryError : new Error(String(retryError));
+        console.warn('[App] AO write failed after retry', normalizedRetryError);
+      }
+    } finally {
+      aoWriteInProgressRef.current = false;
+    }
+  }, [pruneFailuresInWindow, waitMs]);
+
   const pollOnce = useCallback(async () => {
     if (!clientRef.current) return;
+    const client = clientRef.current;
     let firstError: Error | null = null;
-    let displayEventPayload: { aiRaw: Float32Array; aiPhysical: Float32Array; aiVoltage: Float32Array; timestamp: number } | null = null;
-    const pruneAndCountOutputHoldingFailures = () =>
-      pruneFailuresInWindow(outputHoldingFailureTimestampsRef, OUTPUT_HOLDING_RETRY_WINDOW_MS);
-    const pruneAndCountInputReadFailures = () =>
+    const pruneAndCountAI = () =>
       pruneFailuresInWindow(inputReadFailureTimestampsRef, INPUT_READ_RETRY_WINDOW_MS);
-    try {
-      const effectivePrecision: 'normal' | 'extended' = modbusPrecision;
-      await waitAfterTimestamp(lastAiReadCompletedAtRef.current, MIN_AI_TO_NEXT_AI_INTERVAL_MS);
-      let aiSourceValues: number[] | null = null;
-      if (pruneAndCountInputReadFailures() >= INPUT_READ_MAX_FAILURES_PER_WINDOW) {
-        const retryLimitError = new Error(
-          `AI read retry rate exceeded (${INPUT_READ_MAX_FAILURES_PER_WINDOW}/${Math.round(INPUT_READ_RETRY_WINDOW_MS / 1000)}s). Skipping AI read until failure rate decreases.`,
-        );
-        if (!firstError) firstError = retryLimitError;
-      } else {
-        try {
-          aiSourceValues = effectivePrecision === 'extended'
-            ? await clientRef.current.readInputRegistersAsFloat32Abcd(AI_FLOAT_START_REGISTER, AI_CHANNELS)
-            : await clientRef.current.readInputRegisters(AI_START_REGISTER, AI_CHANNELS);
-        } catch (readError) {
-          inputReadFailureTimestampsRef.current.push(Date.now());
-          const normalizedReadError =
-            readError instanceof Error ? readError : new Error(String(readError));
-          console.warn('[App] AI read failed; retrying once', normalizedReadError);
-          await waitMs(RETRY_DELAY_MS);
-          if (pruneAndCountInputReadFailures() >= INPUT_READ_MAX_FAILURES_PER_WINDOW) {
-            if (!firstError) {
-              firstError = new Error(
-                `Failed to read AI Input Registers: ${normalizedReadError.message} (retry rate limit reached)`,
-              );
-            }
-          } else {
-            try {
-              aiSourceValues = effectivePrecision === 'extended'
-                ? await clientRef.current.readInputRegistersAsFloat32Abcd(AI_FLOAT_START_REGISTER, AI_CHANNELS)
-                : await clientRef.current.readInputRegisters(AI_START_REGISTER, AI_CHANNELS);
-            } catch (retryReadError) {
-              inputReadFailureTimestampsRef.current.push(Date.now());
-              const normalizedRetryReadError =
-                retryReadError instanceof Error ? retryReadError : new Error(String(retryReadError));
-              if (!firstError) {
-                firstError = new Error(
-                  `Failed to read AI Input Registers after retry: ${normalizedRetryReadError.message}`,
-                );
-              }
-            }
+
+    let aiSourceValues: number[] | null = null;
+    if (pruneAndCountAI() >= INPUT_READ_MAX_FAILURES_PER_WINDOW) {
+      firstError = new Error(
+        `AI read retry rate exceeded (${INPUT_READ_MAX_FAILURES_PER_WINDOW}/${Math.round(INPUT_READ_RETRY_WINDOW_MS / 1000)}s). Skipping AI read until failure rate decreases.`,
+      );
+    } else {
+      try {
+        aiSourceValues = modbusPrecision === 'extended'
+          ? await client.readInputRegistersAsFloat32Abcd(AI_FLOAT_START_REGISTER, AI_CHANNELS)
+          : await client.readInputRegisters(AI_START_REGISTER, AI_CHANNELS);
+      } catch (readError) {
+        inputReadFailureTimestampsRef.current.push(Date.now());
+        const normalizedReadError =
+          readError instanceof Error ? readError : new Error(String(readError));
+        console.warn('[App] AI read failed; retrying once', normalizedReadError);
+        if (pruneAndCountAI() < INPUT_READ_MAX_FAILURES_PER_WINDOW) {
+          try {
+            await waitMs(RETRY_DELAY_MS);
+            aiSourceValues = modbusPrecision === 'extended'
+              ? await client.readInputRegistersAsFloat32Abcd(AI_FLOAT_START_REGISTER, AI_CHANNELS)
+              : await client.readInputRegisters(AI_START_REGISTER, AI_CHANNELS);
+          } catch (retryReadError) {
+            inputReadFailureTimestampsRef.current.push(Date.now());
+            firstError = new Error(
+              `Failed to read AI Input Registers after retry: ${(retryReadError instanceof Error ? retryReadError : new Error(String(retryReadError))).message}`,
+            );
           }
+        } else {
+          firstError = new Error(
+            `Failed to read AI Input Registers: ${normalizedReadError.message} (retry rate limit reached)`,
+          );
         }
       }
-      if (!aiSourceValues) {
-        throw firstError ?? new Error('AI read failed');
-      }
-      lastAiReadCompletedAtRef.current = Date.now();
+    }
 
+    if (aiSourceValues) {
+      lastAiReadCompletedAtRef.current = Date.now();
       aiRawSourceRef.current = aiSourceValues;
       const aiRaw = new Float32Array(aiSourceValues);
       const aiPhysical = new Float32Array(
@@ -625,106 +648,35 @@ function App() {
           aiToPhysical(value, aiCalibrationRef.current[idx] ?? { a: 0, b: 1, c: 0 })
         )
       );
+
       const aiRawShare = scriptRunner.aiRawShareRef.current;
       const aiPhysicalShare = scriptRunner.aiPhysicalShareRef.current;
       const dataReadyVersion = scriptRunner.dataReadyVersionRef.current;
       if (aiRawShare && aiPhysicalShare && dataReadyVersion) {
         Atomics.store(dataReadyVersion, 0, 1);
-        aiRaw.forEach((value, index) => {
-          aiRawShare[index] = value;
-        });
-        aiPhysical.forEach((value, index) => {
-          aiPhysicalShare[index] = value;
-        });
+        aiRawShare.set(aiRaw);
+        aiPhysicalShare.set(aiPhysical);
         Atomics.store(dataReadyVersion, 0, 0);
       }
 
-      await waitAfterTimestamp(lastAiReadCompletedAtRef.current, MIN_AI_TO_AO_INTERVAL_MS);
-
-      displayEventPayload = {
-        seq: seqCounterRef.current++,
-        aiRaw,
-        aiPhysical,
-        timestamp: Date.now(),
-      };
-    } catch (err) {
-      console.error('[App] pollOnce failed', err);
-      firstError = err instanceof Error ? err : new Error(String(err));
+      const timestamp = Date.now();
+      enqueueDisplayUpdate(aiRaw, aiPhysical);
+      enqueueSaveUpdate(timestamp, aiRaw, aiPhysical);
+    } else if (!firstError) {
+      firstError = new Error('AI read failed');
     }
 
-    const currentAoRaw = aoRawSourceRef.current;
-    const shouldWriteAo = hasAoValuesChanged(lastSentAoRawRef.current, currentAoRaw);
-    if (shouldWriteAo && clientRef.current) {
-      if (pruneAndCountOutputHoldingFailures() >= OUTPUT_HOLDING_MAX_FAILURES_PER_WINDOW) {
-        const retryLimitError = new Error(
-          `AO write retry rate exceeded (${OUTPUT_HOLDING_MAX_FAILURES_PER_WINDOW}/${Math.round(OUTPUT_HOLDING_RETRY_WINDOW_MS / 1000)}s). Skipping AO write until failure rate decreases.`,
-        );
-        console.warn('[App] AO write skipped due to retry limit', {
-          failureCount: outputHoldingFailureTimestampsRef.current.length,
-        });
-        if (!firstError) firstError = retryLimitError;
-      } else {
-        try {
-          await clientRef.current.writeMultipleHoldingRegisters(AO_START_REGISTER, currentAoRaw);
-          lastSentAoRawRef.current = [...currentAoRaw];
-        } catch (writeError) {
-          outputHoldingFailureTimestampsRef.current.push(Date.now());
-          const normalizedWriteError =
-            writeError instanceof Error ? writeError : new Error(String(writeError));
-          console.warn('[App] AO write failed; retrying once', normalizedWriteError);
-          await waitMs(RETRY_DELAY_MS);
+    void doAoWriteAsync();
 
-          const failureCount = pruneAndCountOutputHoldingFailures();
-          if (failureCount >= OUTPUT_HOLDING_MAX_FAILURES_PER_WINDOW) {
-            if (!firstError) {
-              firstError = new Error(
-                `Failed to write AO Holding Registers: ${normalizedWriteError.message} (retry rate limit reached)`,
-              );
-            }
-          } else {
-            try {
-              await clientRef.current.writeMultipleHoldingRegisters(AO_START_REGISTER, currentAoRaw);
-              lastSentAoRawRef.current = [...currentAoRaw];
-            } catch (retryError) {
-              outputHoldingFailureTimestampsRef.current.push(Date.now());
-              const normalizedRetryError =
-                retryError instanceof Error ? retryError : new Error(String(retryError));
-              if (!firstError) {
-                firstError = new Error(
-                  `Failed to write AO Holding Registers after retry: ${normalizedRetryError.message}`,
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (displayEventPayload) {
-      enqueueDisplayUpdate(
-        displayEventPayload.aiRaw,
-        displayEventPayload.aiPhysical,
-      );
-      enqueueSaveUpdate(
-        displayEventPayload.timestamp,
-        displayEventPayload.aiRaw,
-        displayEventPayload.aiPhysical,
-      );
-    }
-
-    if (firstError) {
-      setStatus(firstError.message);
-    } else {
-      setStatus('Polling');
-    }
+    setStatus(firstError ? firstError.message : 'Polling');
   }, [
     modbusPrecision,
     enqueueDisplayUpdate,
     enqueueSaveUpdate,
     pruneFailuresInWindow,
-    waitAfterTimestamp,
     waitMs,
     setStatus,
+    doAoWriteAsync,
     scriptRunner.aiRawShareRef,
     scriptRunner.aiPhysicalShareRef,
     scriptRunner.dataReadyVersionRef,
@@ -735,6 +687,9 @@ function App() {
 
     pollingInProgressRef.current = true;
     const loopStart = Date.now();
+    if (idealScheduleRef.current === 0) {
+      idealScheduleRef.current = loopStart;
+    }
     try {
       await pollOnce();
     } finally {
@@ -742,20 +697,24 @@ function App() {
 
       if (pollTimer.current === undefined) return;
 
-      const elapsed = Date.now() - loopStart;
-      const minInterval = modbusPrecision === 'extended' ? 1 : 10;
-      const nextDelay = Math.max(minInterval, pollingRate.valueMs - elapsed);
+      idealScheduleRef.current += pollingRate.valueMs;
+      const now = Date.now();
+      if (idealScheduleRef.current < now - pollingRate.valueMs) {
+        idealScheduleRef.current = now;
+      }
+      const delay = Math.max(0, idealScheduleRef.current - now);
 
       pollTimer.current = window.setTimeout(() => {
         void runPollingLoop();
-      }, nextDelay);
+      }, delay);
     }
-  }, [pollOnce, pollingRate.valueMs, modbusPrecision]);
+  }, [pollOnce, pollingRate.valueMs]);
 
   const scheduleImmediatePoll = useCallback(() => {
     if (pollTimer.current !== undefined) {
       window.clearTimeout(pollTimer.current);
     }
+    idealScheduleRef.current = 0;
     pollTimer.current = window.setTimeout(() => {
       void runPollingLoop();
     }, 0);
@@ -935,6 +894,7 @@ function App() {
         clientRef.current = null;
       }
       lastSentAoRawRef.current = null;
+      aoWriteInProgressRef.current = false;
       inputReadFailureTimestampsRef.current = [];
       outputHoldingFailureTimestampsRef.current = [];
       lastAiReadCompletedAtRef.current = 0;
