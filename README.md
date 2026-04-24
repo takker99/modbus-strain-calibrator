@@ -190,6 +190,6 @@ MIT License
 
 ## 関連リンク
 
-- **作者**: [KikuchiMakoto](https://github.com/KikuchiMakoto)
+- **作者**: [Makoto KUNO](https://github.com/KikuchiMakoto)
 - **リポジトリ**: https://github.com/KikuchiMakoto/modbus_simple_logger
 - **デモ**: https://kikuchimakoto.github.io/modbus_simple_logger/

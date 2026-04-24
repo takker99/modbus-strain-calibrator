@@ -1,4 +1,15 @@
+/// <reference types="vite/client" />
+
 declare module 'react-plotly.js';
+
+interface ImportMetaEnv {
+  readonly VITE_APP_VERSION: string;
+  readonly VITE_APP_NAME: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
 declare module 'https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.mjs' {
   export function loadPyodide(options?: { indexURL?: string }): Promise<{
     setInterruptBuffer: (buffer: Uint8Array) => void;

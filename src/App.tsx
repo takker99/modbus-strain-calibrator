@@ -52,6 +52,7 @@ import { CalibrationPanel } from './components/CalibrationPanel';
 import { HamburgerMenu } from './components/HamburgerMenu';
 import { ModbusConfigPanel } from './components/ModbusConfigPanel';
 import { VoltageConfigPanel } from './components/VoltageConfigPanel';
+import { AppInfoPanel } from './components/AppInfoPanel';
 import { useTheme } from './hooks/useTheme';
 import { useChartAxes } from './hooks/useChartAxes';
 import { useScriptRunner } from './hooks/useScriptRunner';
@@ -213,6 +214,7 @@ function App() {
   const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState(false);
   const [modbusConfigPanelOpen, setModbusConfigPanelOpen] = useState(false);
   const [voltageConfigPanelOpen, setVoltageConfigPanelOpen] = useState(false);
+  const [appInfoPanelOpen, setAppInfoPanelOpen] = useState(false);
   const [voltageConfig, setVoltageConfig] = useState<VoltageMode[]>(() => loadVoltageConfig());
 
   const clientRef = useRef<WebSerialModbusClient | null>(null);
@@ -252,6 +254,8 @@ function App() {
       setModbusConfigPanelOpen(true);
     } else if (item === 'voltageConfig') {
       setVoltageConfigPanelOpen(true);
+    } else if (item === 'appInfo') {
+      setAppInfoPanelOpen(true);
     }
   };
 
@@ -1335,6 +1339,11 @@ function App() {
         onClose={() => setVoltageConfigPanelOpen(false)}
         voltageConfig={voltageConfig}
         onVoltageConfigChange={setVoltageConfig}
+      />
+
+      <AppInfoPanel
+        open={appInfoPanelOpen}
+        onClose={() => setAppInfoPanelOpen(false)}
       />
     </div>
   );
