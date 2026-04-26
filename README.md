@@ -79,6 +79,7 @@ bun run preview
 
 ## ブラウザ要件
 
+<<<<<<< HEAD
 | API | 用途 | 備考 |
 |-----|------|------|
 | Web Serial API | Modbus RTU 通信 | Chrome 89+ / Edge 89+。モバイルでは `web-serial-polyfill` 経由で WebUSB を利用 |
@@ -88,6 +89,30 @@ bun run preview
 | Wake Lock API | 画面スリープ抑止 | Chrome 84+ / Edge 84+。非対応環境では無視して継続 |
 
 > **注意**: Safari / Firefox では Web Serial API が未対応のため、基本的に動作しません。モバイル環境では Android + Chrome の組み合わせを推奨します。
+
+### Linux でのシリアルポート権限設定
+
+Linux で Web Serial API を使うと「アクセスが拒否された」「ポートが見つからない」などのエラーが出ることがあります。以下をコピーしてターミナルで一括実行してください。
+
+```bash
+sudo systemctl stop brltty-usb.service brltty.service serial-getty@ttyACM0.service serial-getty@ttyUSB0.service 2>/dev/null || true
+sudo systemctl disable brltty-usb.service serial-getty@ttyACM0.service serial-getty@ttyUSB0.service 2>/dev/null || true
+sudo usermod -aG dialout $USER
+echo 'KERNEL=="ttyACM[0-9]*", GROUP="dialout", MODE="0660"
+KERNEL=="ttyUSB[0-9]*", GROUP="dialout", MODE="0660"' | sudo tee /etc/udev/rules.d/99-usb-serial.rules >/dev/null
+sudo udevadm control --reload-rules && sudo udevadm trigger
+echo "完了。再ログインまたは newgrp dialout で権限を反映してください。"
+```
+
+**このスクリプトがやっていること**
+1. `brltty`（点字支援サービス）がシリアルポートを掴むのを止める
+2. `serial-getty`（シリアルコンソールログイン）がポートを占有するのを止める
+3. あなたを `dialout` グループに追加 → `/dev/ttyACM*` や `/dev/ttyUSB*` の読み書きが可能に
+4. udev で「CDC-ACM / USB-シリアル デバイス全体」に対して自動で `dialout` 権限を付与
+
+> **再ログインが必要**: グループ変更は新しいセッションで初めて反映されます。
+>
+> **ModemManager を使っている場合**: `sudo systemctl stop ModemManager.service` も追加で実行してください。
 
 ---
 
