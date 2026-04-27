@@ -1179,7 +1179,7 @@ function App() {
           <h2 className="text-lg font-semibold">Analog Input (16)</h2>
           <p ref={statusRef} className="text-xs text-slate-500 dark:text-slate-400">Disconnected</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
           {aiChannels.map((ch) => {
             const mode = voltageConfig[ch.id];
             const display = rawToDisplayValue(ch.raw, mode);
@@ -1234,7 +1234,7 @@ function App() {
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Analog Output (8)</h2>
         </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
           {aoChannels.map((ch) => (
             <div
               key={ch.id}
