@@ -154,7 +154,7 @@ export function ManualPanel({ open, onClose }: { open: boolean; onClose: () => v
             <dl className="flex flex-col justify-center space-y-1 text-xs">
               <div className="flex items-baseline gap-2">
                 <dt className="w-10 shrink-0 rounded border border-slate-300 bg-white px-1 py-0.5 text-center font-mono font-bold dark:border-slate-600 dark:bg-slate-700">SIG</dt>
-                <dd className="text-slate-600 dark:text-slate-300">信号線（アナログ入出力）</dd>
+                <dd className="text-slate-600 dark:text-slate-300">チャンネル番号（16進）</dd>
               </div>
               <div className="flex items-baseline gap-2">
                 <dt className="w-10 shrink-0 rounded border border-slate-300 bg-slate-800 px-1 py-0.5 text-center font-mono font-bold text-white dark:border-slate-600">G</dt>
@@ -162,6 +162,10 @@ export function ManualPanel({ open, onClose }: { open: boolean; onClose: () => v
               </div>
             </dl>
           </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            SIG はチャンネル番号を16進数で示します（例: 10→A, 15→F）。ADS1115 側は 8〜15 のため、表示は
+            8〜F です。
+          </p>
         </section>
 
         {/* Reference */}
