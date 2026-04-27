@@ -107,13 +107,17 @@ export function ManualPanel({ open, onClose }: { open: boolean; onClose: () => v
             {/* Visual connector layout */}
             <div className="flex flex-col items-center gap-1">
               <div className="grid grid-cols-2 gap-1">
-                <Pin label="A" sub="E+" color="bg-red-500 text-white" />
                 <Pin label="B" sub="S+" color="bg-green-500 text-white" />
+                <Pin label="A" sub="E+" color="bg-red-500 text-white" />
               </div>
               <div className="grid grid-cols-3 gap-1">
                 <Pin label="C" sub="E−" color="bg-slate-700 text-white dark:bg-slate-500" />
-                <Pin label="E" sub="SH" color="bg-yellow-400 text-slate-800" />
+                <Pin label="G" sub="" color="bg-gray text-white" />
+                <Pin label="F" sub="" color="bg-gray text-white" />
+               </div>
+              <div className="grid grid-cols-2 gap-1">
                 <Pin label="D" sub="S−" color="bg-slate-100 text-slate-700 border border-slate-400" />
+                <Pin label="E" sub="SH" color="bg-yellow-400 text-slate-800" />
               </div>
               <span className="mt-1 text-xs text-slate-400">（ソケット正面）</span>
             </div>
