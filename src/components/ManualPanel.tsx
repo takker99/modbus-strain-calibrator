@@ -11,15 +11,6 @@ const CABLE_ROWS = [
     ndis: 'A',
   },
   {
-    color: 'Black / B / 黒',
-    dot: 'bg-slate-800 dark:bg-slate-400',
-    abbr: 'E−',
-    name: 'Excitation −',
-    strain: '入力 −',
-    elec: 'グランド',
-    ndis: 'C',
-  },
-  {
     color: 'Green / G / 緑',
     dot: 'bg-green-500',
     abbr: 'S+',
@@ -27,6 +18,15 @@ const CABLE_ROWS = [
     strain: '出力 +',
     elec: '正出力',
     ndis: 'B',
+  },
+  {
+    color: 'Black / B / 黒',
+    dot: 'bg-slate-800 dark:bg-slate-400',
+    abbr: 'E−',
+    name: 'Excitation −',
+    strain: '入力 −',
+    elec: 'グランド',
+    ndis: 'C',
   },
   {
     color: 'White / W / 白',
