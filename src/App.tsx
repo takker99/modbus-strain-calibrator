@@ -1176,8 +1176,8 @@ function App() {
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Analog Input (16)</h2>
           <div className="text-right leading-tight text-slate-500 dark:text-slate-400">
-            <p className="text-[0.65rem] italic">
-              <em>Phy</em> = <em>a</em>&#x22C5;(<em>Raw</em>)<sup>2</sup> + <em>b</em>&#x22C5;(<em>Raw</em>) + <em>c</em>
+            <p className="text-[0.65rem]">
+              <em>Phy</em> = <em>a</em>&middot;(<em>Raw</em>)<sup>2</sup> + <em>b</em>&middot;(<em>Raw</em>) + <em>c</em>
             </p>
             <p className="text-[0.6rem]">
               <em>a</em>, <em>b</em>, <em>c</em> : Input Calibration
