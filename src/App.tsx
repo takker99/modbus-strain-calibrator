@@ -1280,7 +1280,7 @@ function App() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="button-primary"
+                className="button-primary py-0.5 text-sm"
                 onClick={scriptRunner.toggleScriptRunner}
                 disabled={!scriptRunner.scriptRunnerSupported}
               >
@@ -1288,7 +1288,7 @@ function App() {
               </button>
               <button
                 type="button"
-                className="button-secondary"
+                className="button-secondary py-0.5 text-sm"
                 onClick={scriptRunner.clearScriptCode}
                 disabled={scriptRunner.scriptRunning}
                 title="Reset script to default"
