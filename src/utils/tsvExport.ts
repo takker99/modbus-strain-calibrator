@@ -73,20 +73,21 @@ export class TsvWriter {
   private physicalPrecision: number;
   private fileName: string;
   private writeBuffer: string[] = [];
-  private readonly bufferRows: number;
+  private readonly flushIntervalMs: number;
+  private lastFlushedAt: number = 0;
 
   constructor(
     stream: FileSystemWritableFileStream,
     channels: number,
     physicalPrecision: number = 3,
     fileName: string = 'unnamed.tsv',
-    bufferRows: number = 50
+    flushIntervalMs: number = 60_000
   ) {
     this.stream = stream;
     this.channels = channels;
     this.physicalPrecision = physicalPrecision;
     this.fileName = fileName;
-    this.bufferRows = bufferRows;
+    this.flushIntervalMs = flushIntervalMs;
   }
 
   async writeHeader(): Promise<void> {
@@ -98,12 +99,13 @@ export class TsvWriter {
     if (this.writeBuffer.length === 0) return;
     const data = this.writeBuffer.join('');
     this.writeBuffer = [];
+    this.lastFlushedAt = Date.now();
     await this.stream.write(data);
   }
 
   /**
    * Write a single data row to the file.
-   * Rows are buffered and flushed to disk in batches to reduce disk I/O.
+   * Rows are buffered and flushed to disk once per flushIntervalMs to reduce disk I/O.
    */
   async writeRow(timestamp: number, aiRaw: Float32Array | number[], aiPhysical: Float32Array | number[]): Promise<void> {
     const rawArr = toArrayLike(aiRaw);
@@ -121,7 +123,7 @@ export class TsvWriter {
       this.physicalPrecision
     );
     this.writeBuffer.push(row);
-    if (this.writeBuffer.length >= this.bufferRows) {
+    if (Date.now() - this.lastFlushedAt >= this.flushIntervalMs) {
       await this.flush();
     }
   }
