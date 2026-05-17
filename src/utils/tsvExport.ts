@@ -73,21 +73,17 @@ export class TsvWriter {
   private physicalPrecision: number;
   private fileName: string;
   private writeBuffer: string[] = [];
-  private readonly flushIntervalMs: number;
-  private lastFlushedAt: number = 0;
 
   constructor(
     stream: FileSystemWritableFileStream,
     channels: number,
     physicalPrecision: number = 3,
-    fileName: string = 'unnamed.tsv',
-    flushIntervalMs: number = 60_000
+    fileName: string = 'unnamed.tsv'
   ) {
     this.stream = stream;
     this.channels = channels;
     this.physicalPrecision = physicalPrecision;
     this.fileName = fileName;
-    this.flushIntervalMs = flushIntervalMs;
   }
 
   async writeHeader(): Promise<void> {
@@ -99,15 +95,10 @@ export class TsvWriter {
     if (this.writeBuffer.length === 0) return;
     const data = this.writeBuffer.join('');
     this.writeBuffer = [];
-    this.lastFlushedAt = Date.now();
     await this.stream.write(data);
   }
 
-  /**
-   * Write a single data row to the file.
-   * Rows are buffered and flushed to disk once per flushIntervalMs to reduce disk I/O.
-   */
-  async writeRow(timestamp: number, aiRaw: Float32Array | number[], aiPhysical: Float32Array | number[]): Promise<void> {
+  writeRow(timestamp: number, aiRaw: Float32Array | number[], aiPhysical: Float32Array | number[]): void {
     const rawArr = toArrayLike(aiRaw);
     const phyArr = toArrayLike(aiPhysical);
     if (rawArr.length !== this.channels) {
@@ -116,16 +107,7 @@ export class TsvWriter {
     if (phyArr.length !== this.channels) {
       throw new Error(`Invalid physical values column count: expected ${this.channels}, got ${phyArr.length}.`);
     }
-    const row = formatTsvRow(
-      timestamp,
-      aiRaw,
-      aiPhysical,
-      this.physicalPrecision
-    );
-    this.writeBuffer.push(row);
-    if (Date.now() - this.lastFlushedAt >= this.flushIntervalMs) {
-      await this.flush();
-    }
+    this.writeBuffer.push(formatTsvRow(timestamp, aiRaw, aiPhysical, this.physicalPrecision));
   }
 
   async close(): Promise<void> {
