@@ -446,17 +446,18 @@ function App() {
       aiPhysical: Array.from(aiPhysical),
     };
 
-    dataStorage.addDataPoint(dataPoint).catch((err) => {
-      console.error('Error adding data point:', err);
-      setStatus(`IndexedDB error: ${(err as Error).message}`);
-    });
-
-    keepLatestCountRef.current++;
-    if (keepLatestCountRef.current % KEEP_LATEST_TRIM_INTERVAL === 0) {
-      const displayLimit = tsvWriterRef.current ? MAX_POINTS_WHILE_SAVING : MAX_POINTS_IN_MEMORY;
-      dataStorage.keepLatestPoints(displayLimit).catch((err) => {
-        console.error('Error trimming data points:', err);
+    if (!tsvWriterRef.current) {
+      dataStorage.addDataPoint(dataPoint).catch((err) => {
+        console.error('Error adding data point:', err);
+        setStatus(`IndexedDB error: ${(err as Error).message}`);
       });
+
+      keepLatestCountRef.current++;
+      if (keepLatestCountRef.current % KEEP_LATEST_TRIM_INTERVAL === 0) {
+        dataStorage.keepLatestPoints(MAX_POINTS_IN_MEMORY).catch((err) => {
+          console.error('Error trimming data points:', err);
+        });
+      }
     }
 
     pendingDataPoints.current.push({
