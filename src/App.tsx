@@ -247,6 +247,7 @@ function App() {
   const idealScheduleRef = useRef(0);
   const dataBufferRef = useRef<DataPoint[]>([]);
   const pollingRateRef = useRef(pollingRate.valueMs);
+  const voltageConfigRef = useRef<VoltageMode[]>(voltageConfig);
 
   const handleMenuSelect = (item: string) => {
     if (item === 'calibration') {
@@ -286,6 +287,7 @@ function App() {
 
   useEffect(() => {
     saveVoltageConfig(voltageConfig);
+    voltageConfigRef.current = voltageConfig;
   }, [voltageConfig]);
 
   const isSaving = !!tsvWriterRef.current;
@@ -534,7 +536,11 @@ function App() {
     const writer = tsvWriterRef.current;
     if (!writer) return;
     try {
-      writer.writeRow(timestamp, aiRaw, aiPhysical);
+      const aoRaw = new Float32Array(aoRawSourceRef.current);
+      const aiVoltage = new Float32Array(
+        Array.from(aiRaw).map((v, i) => rawToDisplayValue(v, voltageConfigRef.current[i] ?? 'unknown').value)
+      );
+      writer.writeRow(timestamp, aiRaw, aiPhysical, aoRaw, aiVoltage);
       setSavePointCount((prev) => prev + 1);
     } catch (err) {
       console.error('[App] save update failed', err);
@@ -1002,7 +1008,7 @@ function App() {
 
   const handleStartSave = async () => {
     try {
-      const writer = await createTsvWriter(AI_CHANNELS);
+      const writer = await createTsvWriter(AI_CHANNELS, AO_CHANNELS);
       const startedAt = Date.now();
 
       pendingDataPoints.current = [];
