@@ -22,19 +22,23 @@ export function formatTimestamp(timestamp: number): string {
 }
 
 /**
- * Create TSV header row for AI channel data
- * Format: timestamp\tai_raw_00\tai_raw_01\t...\tai_phy_00\tai_phy_01\t...
- * @param channels - Number of AI channels
+ * Create TSV header row for AI/AO channel data
+ * Format: timestamp\tai_raw_00\t...\tai_phy_00\t...\tao_raw_00\t...\tai_vlt_00\t...\tao_vlt_00\t...
+ * @param aiChannels - Number of AI channels
+ * @param aoChannels - Number of AO channels
  * @returns TSV header string with newline
  */
-export function createTsvHeader(channels: number): string {
-  const rawHeaders = Array.from({ length: channels }, (_, i) =>
-    `ai_raw_${i.toString().padStart(2, '0')}`
-  );
-  const phyHeaders = Array.from({ length: channels }, (_, i) =>
-    `ai_phy_${i.toString().padStart(2, '0')}`
-  );
-  return ['timestamp', ...rawHeaders, ...phyHeaders].join('\t') + '\n';
+export function createTsvHeader(aiChannels: number, aoChannels: number): string {
+  const ch = (prefix: string, n: number) =>
+    Array.from({ length: n }, (_, i) => `${prefix}${i.toString().padStart(2, '0')}`);
+  return [
+    'timestamp',
+    ...ch('ai_raw_', aiChannels),
+    ...ch('ai_phy_', aiChannels),
+    ...ch('ao_raw_', aoChannels),
+    ...ch('ai_vlt_', aiChannels),
+    ...ch('ao_vlt_', aoChannels),
+  ].join('\t') + '\n';
 }
 
 function toArrayLike(data: Float32Array | number[]): number[] {
@@ -44,23 +48,33 @@ function toArrayLike(data: Float32Array | number[]): number[] {
 /**
  * Format a single data row as TSV
  * @param timestamp - Unix timestamp in milliseconds
- * @param aiRaw - Array of raw AI channel values (Float32Array or number[])
- * @param aiPhysical - Array of physical AI channel values (Float32Array or number[])
- * @param physicalPrecision - Number of decimal places for physical values (default: 3)
+ * @param aiRaw - Array of raw AI channel values
+ * @param aiPhysical - Array of physical AI channel values
+ * @param aoRaw - Array of raw AO channel values (millivolts)
+ * @param aiVoltage - Array of AI voltage display values
+ * @param aoVoltage - Array of AO voltage values (volts)
+ * @param physicalPrecision - Number of decimal places for physical/voltage values (default: 3)
  * @returns TSV data row string with newline
  */
 export function formatTsvRow(
   timestamp: number,
   aiRaw: Float32Array | number[],
   aiPhysical: Float32Array | number[],
+  aoRaw: Float32Array | number[],
+  aiVoltage: Float32Array | number[],
+  aoVoltage: Float32Array | number[],
   physicalPrecision: number = 3
 ): string {
   const timestampStr = formatTimestamp(timestamp);
-  const rawArr = toArrayLike(aiRaw);
-  const phyArr = toArrayLike(aiPhysical);
-  const rawValues = rawArr.map(v => v.toString());
-  const phyValues = phyArr.map(v => v.toFixed(physicalPrecision));
-  return [timestampStr, ...rawValues, ...phyValues].join('\t') + '\n';
+  const fmt = (v: number) => v.toFixed(physicalPrecision);
+  return [
+    timestampStr,
+    ...toArrayLike(aiRaw).map(v => v.toString()),
+    ...toArrayLike(aiPhysical).map(fmt),
+    ...toArrayLike(aoRaw).map(v => v.toString()),
+    ...toArrayLike(aiVoltage).map(fmt),
+    ...toArrayLike(aoVoltage).map(fmt),
+  ].join('\t') + '\n';
 }
 
 /**
@@ -69,25 +83,28 @@ export function formatTsvRow(
  */
 export class TsvWriter {
   private stream: FileSystemWritableFileStream;
-  private channels: number;
+  private aiChannels: number;
+  private aoChannels: number;
   private physicalPrecision: number;
   private fileName: string;
   private writeBuffer: string[] = [];
 
   constructor(
     stream: FileSystemWritableFileStream,
-    channels: number,
+    aiChannels: number,
+    aoChannels: number,
     physicalPrecision: number = 3,
     fileName: string = 'unnamed.tsv'
   ) {
     this.stream = stream;
-    this.channels = channels;
+    this.aiChannels = aiChannels;
+    this.aoChannels = aoChannels;
     this.physicalPrecision = physicalPrecision;
     this.fileName = fileName;
   }
 
   async writeHeader(): Promise<void> {
-    const header = createTsvHeader(this.channels);
+    const header = createTsvHeader(this.aiChannels, this.aoChannels);
     await this.stream.write(header);
   }
 
@@ -98,16 +115,23 @@ export class TsvWriter {
     await this.stream.write(data);
   }
 
-  writeRow(timestamp: number, aiRaw: Float32Array | number[], aiPhysical: Float32Array | number[]): void {
+  writeRow(
+    timestamp: number,
+    aiRaw: Float32Array | number[],
+    aiPhysical: Float32Array | number[],
+    aoRaw: Float32Array | number[],
+    aiVoltage: Float32Array | number[],
+    aoVoltage: Float32Array | number[]
+  ): void {
     const rawArr = toArrayLike(aiRaw);
     const phyArr = toArrayLike(aiPhysical);
-    if (rawArr.length !== this.channels) {
-      throw new Error(`Invalid raw values column count: expected ${this.channels}, got ${rawArr.length}.`);
+    if (rawArr.length !== this.aiChannels) {
+      throw new Error(`Invalid AI raw column count: expected ${this.aiChannels}, got ${rawArr.length}.`);
     }
-    if (phyArr.length !== this.channels) {
-      throw new Error(`Invalid physical values column count: expected ${this.channels}, got ${phyArr.length}.`);
+    if (phyArr.length !== this.aiChannels) {
+      throw new Error(`Invalid AI physical column count: expected ${this.aiChannels}, got ${phyArr.length}.`);
     }
-    this.writeBuffer.push(formatTsvRow(timestamp, aiRaw, aiPhysical, this.physicalPrecision));
+    this.writeBuffer.push(formatTsvRow(timestamp, aiRaw, aiPhysical, aoRaw, aiVoltage, aoVoltage, this.physicalPrecision));
   }
 
   async close(): Promise<void> {
@@ -122,14 +146,16 @@ export class TsvWriter {
 
 /**
  * Create a TSV file picker and initialize a TsvWriter
- * @param channels - Number of AI channels
+ * @param aiChannels - Number of AI channels
+ * @param aoChannels - Number of AO channels
  * @param suggestedName - Suggested filename (default: auto-generated with timestamp)
  * @param physicalPrecision - Decimal places for physical values (default: 3)
  * @returns TsvWriter instance
  * @throws Error if File System Access API is not supported
  */
 export async function createTsvWriter(
-  channels: number,
+  aiChannels: number,
+  aoChannels: number,
   suggestedName?: string,
   physicalPrecision: number = 3
 ): Promise<TsvWriter> {
@@ -152,7 +178,7 @@ export async function createTsvWriter(
   });
 
   const stream = await fileHandle.createWritable();
-  const writer = new TsvWriter(stream, channels, physicalPrecision, fileHandle.name);
+  const writer = new TsvWriter(stream, aiChannels, aoChannels, physicalPrecision, fileHandle.name);
 
   await writer.writeHeader();
 
