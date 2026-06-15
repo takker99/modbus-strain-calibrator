@@ -30,6 +30,11 @@ async def _runner_run(code):
     _ScriptRunner.task = asyncio.ensure_future(eval_code_async(code, globals=globals()))
     try:
         await _ScriptRunner.task
+    except SystemExit:
+        # exit() / quit() / sys.exit() — Pyodide 314 ships the full stdlib so
+        # these now exist and raise SystemExit. Treat them as a normal end of
+        # the script rather than an error.
+        pass
     finally:
         _ScriptRunner.task = None
 
@@ -169,6 +174,10 @@ self.onmessage = async (event: MessageEvent<WorkerIncomingMessage>) => {
       // cancelled. Both mean the user pressed Stop.
       if (text.includes('KeyboardInterrupt') || text.includes('CancelledError')) {
         postWorkerMessage({ type: 'interrupted', message: 'Stopped' });
+      } else if (text.includes('SystemExit')) {
+        // Fallback in case exit()/quit()/sys.exit() ever escapes _runner_run:
+        // a clean script end, not an error.
+        postWorkerMessage({ type: 'done', message: 'Completed' });
       } else {
         postWorkerMessage({ type: 'error', message: text });
       }
