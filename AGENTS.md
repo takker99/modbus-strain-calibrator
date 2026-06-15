@@ -82,9 +82,12 @@ USBパケット遅延・詰まりによる通信エラーを防ぐため、**Mod
 - 100ms〜5分の定期ポーリング（`setTimeout` 再帰スケジュール）
 - **`pollOnce` は AI 読取りのみをブロック** — AO 書込みは `doAoWriteAsync` で非ブロック実行
 - AI 読取り / AO 書込みそれぞれ独立のリトライレート制限（60s ウィンドウ内最大10回）
-- **IndexedDB 書き込みは fire-and-forget**（`updateDataHistory` は同期関数、`.catch()` でエラーハンドリング）
-- チャート表示ポイント上限: 通常 256 / 保存中 65536
-- ペンドデータポイントのバッチフラッシュ（5件 or 100ms ごと）
+- **IndexedDB 書き込みは fire-and-forget**（非保存時のみ。`flushPendingDataPoints` でバッチ書込み `addDataPoints`）
+- **チャート表示は描画点数を抑制**（全データは TSV に全点記録、これは「画面表示」のみの話）:
+  - 非保存時: 直近 `NON_SAVING_CHART_WINDOW_MS`（60s）のスライディング時間窓
+  - 保存時: 保存開始〜現在の全期間を `CHART_MAX_POINTS`(4096) へストライド間引き（`saveDecimationStrideRef`/`saveRawCounterRef`、バッファが 2×超で偶数 index 再間引き＆stride 倍化 → メモリ一定）
+  - 共通上限 `CHART_MAX_POINTS`。`MAX_POINTS_IN_MEMORY`(256) は IndexedDB trim 専用
+- ペンドデータポイントのバッチフラッシュ（5件 or 100ms ごと、表示バッファ更新と IndexedDB バッチ書込みを実施）
 - `pageshow` / `visibilitychange` による復帰時即時ポーリング（`acquiring` 状態を ref で確認）
 - USB 物理抜けの `disconnect` イベント自動検知
 - **キャリブレーション変更時もポーリングは継続**（`aiCalibrationRef` で最新値を参照）
@@ -140,8 +143,9 @@ USBパケット遅延・詰まりによる通信エラーを防ぐため、**Mod
 | `INPUT_READ_MAX_FAILURES_PER_WINDOW` | 10 | ウィンドウ内 AI 読取り最大失敗回数 |
 | `OUTPUT_HOLDING_RETRY_WINDOW_MS` | 60000 | AO 書込みリトライ制限の評価ウィンドウ |
 | `OUTPUT_HOLDING_MAX_FAILURES_PER_WINDOW` | 10 | ウィンドウ内 AO 書込み最大失敗回数 |
-| `MAX_POINTS_IN_MEMORY` | 256 | 通常時のチャート表示上限 |
-| `MAX_POINTS_WHILE_SAVING` | 65536 | 保存中のチャート表示上限 |
+| `MAX_POINTS_IN_MEMORY` | 256 | 非保存時の IndexedDB 保持点数（trim 専用） |
+| `CHART_MAX_POINTS` | 4096 | チャート描画点数の上限（保存時ダウンサンプル目標） |
+| `NON_SAVING_CHART_WINDOW_MS` | 60000 | 非保存時チャートのスライディング時間窓 |
 | `BATCH_FLUSH_THRESHOLD` | 5 | バッチフラッシュのペンド件数閾値 |
 | `BATCH_FLUSH_INTERVAL_MS` | 100 | バッチフラッシュの最大遅延 |
 

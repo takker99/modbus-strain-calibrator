@@ -87,10 +87,18 @@ export function ChartPanel({
 
   const plotData = useMemo(() => {
     if (isEmpty) return [];
-    const xData = dataPoints.map((p) =>
-      xDesc.kind === 'time' ? new Date(p.timestamp).toISOString() : resolveAxisValue(p, xDesc)
-    );
-    const yData = dataPoints.map((p) => resolveAxisValue(p, yDesc));
+    // Build x/y in a single pass into typed arrays. Plotly's date axis accepts
+    // epoch-ms numbers directly, so we avoid the per-point `new Date().toISOString()`
+    // allocation entirely; both axes end up numeric.
+    const n = dataPoints.length;
+    const xData = new Float64Array(n);
+    const yData = new Float64Array(n);
+    const xIsTime = xDesc.kind === 'time';
+    for (let i = 0; i < n; i++) {
+      const p = dataPoints[i];
+      xData[i] = xIsTime ? p.timestamp : resolveAxisValue(p, xDesc);
+      yData[i] = resolveAxisValue(p, yDesc);
+    }
 
     return [
       {
