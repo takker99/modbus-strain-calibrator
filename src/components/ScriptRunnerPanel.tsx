@@ -1,4 +1,5 @@
-import type { KeyboardEvent } from 'react';
+import { useState } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import type { useScriptRunner } from '../hooks/useScriptRunner';
 import { FloatingWindow } from './FloatingWindow';
 
@@ -25,12 +26,37 @@ const API_DOCS = [
   { name: 'await asyncio.sleep(s)', desc: 'Non-blocking sleep. Do NOT use time.sleep().' },
 ];
 
+const AI_PROMPT = [
+  'Write a Python script for ModbusSimpleLogger ScriptRunner (Python 3 / Pyodide, runs inside an asyncio event loop; top-level await is allowed).',
+  '',
+  'API:',
+  ...API_DOCS.map((api) => `- ${api.name}: ${api.desc}`),
+  '',
+  'Absolute rules:',
+  '- Every wait MUST be `await asyncio.sleep(seconds)`. NEVER use time.sleep() — it blocks the runtime.',
+  '- Repeated processing (e.g. feedback control) MUST be an explicit `while` or `for` loop with `await asyncio.sleep()` inside each iteration. Timers, callbacks and threads are not available.',
+  '',
+  'Task: <describe the script you want here>',
+].join('\n');
+
 export function ScriptRunnerPanel({
   open,
   onClose,
   scriptRunner,
   onEditorKeyDown,
 }: ScriptRunnerPanelProps) {
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  const copyAiPrompt = (event: MouseEvent<HTMLButtonElement>) => {
+    // Inside <summary>: keep the click from toggling the <details>.
+    event.preventDefault();
+    event.stopPropagation();
+    navigator.clipboard.writeText(AI_PROMPT).then(() => {
+      setPromptCopied(true);
+      window.setTimeout(() => setPromptCopied(false), 1500);
+    });
+  };
+
   return (
     <FloatingWindow
       open={open}
@@ -73,8 +99,16 @@ export function ScriptRunnerPanel({
           spellCheck={false}
         />
         <details className="rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
-          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <summary className="flex cursor-pointer select-none items-center justify-between px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
             API Reference
+            <button
+              type="button"
+              className="button-secondary py-0.5 text-xs"
+              onClick={copyAiPrompt}
+              title="Copy an AI-ready prompt of this API reference to the clipboard"
+            >
+              {promptCopied ? 'Copied!' : 'Copy for AI'}
+            </button>
           </summary>
           <ul className="space-y-2 px-3 pb-3 text-xs text-slate-600 dark:text-slate-400">
             {API_DOCS.map((api) => (
