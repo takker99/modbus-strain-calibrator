@@ -165,8 +165,11 @@ function getDefaultScript(): string {
 # Loop with a plain while/for. Press Stop to halt at any time.
 
 import asyncio
+import math
 
+t = 0.0
 while True:
-    set_param(0, get_ai_phy(0))  # example: mirror AI ch0 into Parameter ch0
+    set_param(0, math.sin(t))  # example: slow sine wave on Parameter ch0
+    t += 0.1
     await asyncio.sleep(1)`;
 }
