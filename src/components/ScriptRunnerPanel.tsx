@@ -18,30 +18,30 @@ type ScriptRunnerPanelProps = {
 };
 
 const API_DOCS = [
-  { name: 'get_ai_raw(ch)', desc: 'Read raw AI value for channel ch (0-15).' },
-  { name: 'get_ai_phy(ch)', desc: 'Read calibrated AI value for channel ch (0-15).' },
-  { name: 'get_ao(ch)', desc: 'Read back AO voltage in V for channel ch (0-7).' },
-  { name: 'set_ao(ch, data)', desc: 'Write AO voltage in V (internally clamped to 0-10V). Applied asynchronously, so get_ao() reflects it only after the main thread applies it.' },
-  { name: 'get_param(ch)', desc: 'Read scratch Parameter value for channel ch (0-7). Always 0 at app startup.' },
-  { name: 'set_param(ch, data)', desc: 'Write scratch Parameter value for channel ch (0-7). Shown in the Parameter panel and logged to TSV; not persisted.' },
-  { name: 'await asyncio.sleep(s)', desc: 'Non-blocking sleep. Do NOT use time.sleep().' },
+  { name: 'get_ai_raw(ch)', desc: 'Raw AI value. ch: 0-15.' },
+  { name: 'get_ai_phy(ch)', desc: 'Calibrated AI value. ch: 0-15.' },
+  { name: 'get_ao(ch)', desc: 'AO voltage [V]. ch: 0-7.' },
+  { name: 'set_ao(ch, v)', desc: 'Set AO voltage [V], clamped to 0-10. Applied async; get_ao() updates slightly later.' },
+  { name: 'get_param(ch)', desc: 'Scratch value. ch: 0-7. Starts at 0.' },
+  { name: 'set_param(ch, v)', desc: 'Set scratch value. Shown in Parameter panel, logged to TSV. Not persisted.' },
+  { name: 'await asyncio.sleep(s)', desc: 'Non-blocking wait. NEVER time.sleep().' },
 ];
 
 const buildAiPrompt = (channelLabels: ChannelLabels): string =>
   [
-    'Write a Python script for ModbusSimpleLogger ScriptRunner (Python 3 / Pyodide, runs inside an asyncio event loop; top-level await is allowed).',
+    'Write a Python script for ModbusSimpleLogger ScriptRunner (Pyodide; async context, top-level await OK).',
     '',
     'API:',
     ...API_DOCS.map((api) => `- ${api.name}: ${api.desc}`),
     '',
     'Absolute rules:',
-    '- Every wait MUST be `await asyncio.sleep(seconds)`. NEVER use time.sleep() — it blocks the runtime.',
-    '- Repeated processing (e.g. feedback control) MUST be an explicit `while` or `for` loop with `await asyncio.sleep()` inside each iteration. Timers, callbacks and threads are not available.',
+    '- Wait only with `await asyncio.sleep(s)`. NEVER time.sleep().',
+    '- Repeat/feedback control only with a plain `while`/`for` loop awaiting asyncio.sleep(s) each iteration. No timers, callbacks or threads.',
     '',
-    'User-defined channel labels (JSON; array index = ch, "" = unlabeled):',
+    'Channel labels (JSON; index = ch, "" = unlabeled):',
     JSON.stringify(channelLabels),
     '',
-    'Task: <describe the script you want here>',
+    'Task: <your request here>',
   ].join('\n');
 
 export function ScriptRunnerPanel({
