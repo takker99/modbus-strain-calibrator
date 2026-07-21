@@ -4,4 +4,5 @@ bun.lockb
 package-lock.json
 npm-debug.log*
 dist
+src/tailwind.gen.css
 .DS_Store

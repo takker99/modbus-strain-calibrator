@@ -43,7 +43,7 @@ export function LiveChart({
 		{
 			x: indices,
 			y: rawHistory,
-			type: "scatter",
+			type: "scattergl",
 			mode: "lines",
 			name: "Raw",
 			line: { width: 1, color: "#94a3b8" },
@@ -51,7 +51,7 @@ export function LiveChart({
 		{
 			x: indices,
 			y: filteredHistory,
-			type: "scatter",
+			type: "scattergl",
 			mode: "lines",
 			name: "Filtered",
 			line: { width: 2, color: "#10b981" },
@@ -84,12 +84,17 @@ export function LiveChart({
 
 	const config = {
 		displayModeBar: false,
-		responsive: true,
 	};
 
 	return (
-		<div className="h-48 w-full overflow-hidden">
-			<Plot data={data} layout={layout} config={config} />
+		<div className="h-48 w-full">
+			<Plot
+				data={data}
+				layout={layout}
+				config={config}
+				style={{ width: "100%", height: "100%" }}
+				useResizeHandler
+			/>
 		</div>
 	);
 }

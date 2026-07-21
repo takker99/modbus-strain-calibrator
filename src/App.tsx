@@ -296,7 +296,7 @@ export default function App() {
 			{connected && live.isPolling && (
 				<div className="grid flex-1 grid-cols-1 gap-2 overflow-hidden p-2 lg:grid-cols-[1fr_380px]">
 					<div className="flex flex-col gap-2 overflow-hidden">
-						<div className="card overflow-hidden">
+						<div className="card">
 							<LiveChart
 								rawHistory={
 									live.history[settings.targetCh]?.raw ?? new Float32Array(0)
@@ -313,7 +313,7 @@ export default function App() {
 								isDark={isDarkMode}
 							/>
 						</div>
-						<div className="card flex-1 overflow-hidden">
+						<div className="card flex-1">
 							<RegressionPlot
 								points={cal.points}
 								result={cal.result}
