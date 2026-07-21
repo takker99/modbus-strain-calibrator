@@ -4,6 +4,7 @@ import { Plot } from "../plotly";
 interface LiveChartProps {
 	rawHistory: Float32Array;
 	filteredHistory: Float32Array;
+	historyWindowSeconds: number;
 	currentRaw: number;
 	currentFiltered: number;
 	currentMvPerV: number;
@@ -15,6 +16,7 @@ interface LiveChartProps {
 export function LiveChart({
 	rawHistory,
 	filteredHistory,
+	historyWindowSeconds,
 	currentRaw,
 	currentFiltered,
 	currentMvPerV,
@@ -22,7 +24,14 @@ export function LiveChart({
 	isStable,
 	isDark,
 }: LiveChartProps) {
-	const indices = useMemo(() => rawHistory.map((_, i) => i), [rawHistory]);
+	const timeAxis = useMemo(() => {
+		const n = rawHistory.length;
+		const result = new Float32Array(n);
+		for (let i = 0; i < n; i++) {
+			result[i] = -historyWindowSeconds + (i / n) * historyWindowSeconds;
+		}
+		return result;
+	}, [rawHistory.length, historyWindowSeconds]);
 
 	const yRange = useMemo(() => {
 		const values: number[] = [];
@@ -41,7 +50,7 @@ export function LiveChart({
 	// biome-ignore lint/suspicious/noExplicitAny: Plotly trace shapes
 	const data: any[] = [
 		{
-			x: indices,
+			x: timeAxis,
 			y: rawHistory,
 			type: "scattergl",
 			mode: "lines",
@@ -49,7 +58,7 @@ export function LiveChart({
 			line: { width: 1, color: "#94a3b8" },
 		},
 		{
-			x: indices,
+			x: timeAxis,
 			y: filteredHistory,
 			type: "scattergl",
 			mode: "lines",
@@ -68,8 +77,10 @@ export function LiveChart({
 		plot_bgcolor: isDark ? "#1e293b" : "#ffffff",
 		font: { color: isDark ? "#e2e8f0" : "#334155", size: 10 },
 		xaxis: {
-			visible: false,
+			visible: true,
 			zeroline: false,
+			ticksuffix: " s",
+			gridcolor: isDark ? "#334155" : "#e2e8f0",
 		},
 		yaxis: {
 			range: yRange,

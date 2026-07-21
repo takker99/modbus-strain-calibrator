@@ -192,3 +192,10 @@ Phase 0-3 までに残っていた Biome lint エラーを修正:
 
 - `CalibrationWorkbench.tsx:40` の `formatX()` で raw 単位の表示を `x.toFixed(0)` → `x.toFixed(4)` に変更
 - EMA フィルタ後の浮動小数点値が確認できるようになった
+
+## 2026-07-22 | refactor | グラフ横軸をサンプル数から時間（秒）に変更
+
+- `useHx711Live.ts`: `HISTORY_SECONDS` 固定値（10）を削除し、`historyWindowSeconds` をパラメータ化
+- `LiveChart.tsx`: x 軸をサンプルインデックス → 相対時間（秒、負値で過去を表す）に変更、x 軸を表示するよう変更
+- `App.tsx`: `chartWindowSeconds` 状態を追加（localStorage 永続化）、ツールバーに Chart 時間選択 dropdown（5s〜10min）を追加
+- `LiveChart.tsx` に `historyWindowSeconds` prop を追加、x 軸ラベルに `ticksuffix: " s"` を設定
