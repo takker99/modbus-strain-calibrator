@@ -92,7 +92,11 @@
 ```bash
 pnpm install
 pnpm dev          # http://localhost:5173/
-pnpm typecheck
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # biome check
+pnpm lint:fix     # biome check --write
+pnpm test         # vitest
+pnpm test:cov     # vitest --coverage (目標 80%)
 pnpm build
 pnpm preview      # http://localhost:4173/modbus_strain_calibrator/
 ```

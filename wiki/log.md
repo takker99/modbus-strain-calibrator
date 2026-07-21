@@ -86,6 +86,12 @@ Vitest 導入を決定（regression.ts の単体テスト用）。
 
 - 既存のポイントの y も後から編集可能（入力ミス訂正用）、編集のたびに自動再計算
 
+## 2026-07-21 | design | 技術スタック更新
+
+- TypeScript 6 → **7**
+- Lint/Format: **Biome** 導入（ESLint/Prettier 不使用）
+- Vitest カバレッジ目標 **80%**
+
 ## 2026-07-21 | design | UI 全面見直し + 自動再計算 + 単位切替
 
 ユーザーの UI 指摘を反映し大幅改修:

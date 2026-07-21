@@ -37,9 +37,10 @@
 
 | レイヤー | 技術 |
 |----------|------|
-| フレームワーク | React 19 + TypeScript 6 |
+| フレームワーク | React 19 + TypeScript 7 |
 | ビルド | Vite 8 + pnpm |
 | スタイリング | Tailwind CSS 4 |
+| Lint / Format | Biome |
 | チャート | Plotly.js (`plotly.js/lib/core` + `scattergl`) |
 | Modbus 通信 | Web Serial API + `web-serial-polyfill` |
 | 永続化 | localStorage（設定・検定結果）+ CSV/JSON ダウンロード |
@@ -612,21 +613,16 @@ modbus-strain-calibrator/
 pnpm install
 
 # 開発
-pnpm dev
-# → http://localhost:5173/
-
-# 型チェック
-pnpm typecheck
+pnpm dev              # → http://localhost:5173/
+pnpm typecheck        # tsc --noEmit
+pnpm lint             # biome check
+pnpm lint:fix         # biome check --write
+pnpm test             # vitest
+pnpm test:cov         # vitest --coverage (目標 80%)
 
 # ビルド
-pnpm build
-# → dist/
-
-# プレビュー（GitHub Pages の subdir 確認用）
-pnpm preview
-# → http://localhost:4173/modbus_strain_calibrator/
-
-# デプロイ: GitHub Pages へ push で自動デプロイ (.github/workflows/deploy.yml)
+pnpm build            # → dist/
+pnpm preview          # → http://localhost:4173/modbus_strain_calibrator/
 ```
 
 `deploy.yml` は `pnpm` アクションに置換:
@@ -681,7 +677,7 @@ pnpm preview
 - **手動 E2E**: 実機 HX711 + 既知負荷で 1-port / 2-port 両モード
 - **モダンブラウザ互換**: Chrome / Edge 最新版で動作確認
 
-`pnpm add -D vitest` で導入、`pnpm test` で実行。
+`pnpm add -D vitest` で導入、`pnpm test` で実行。カバレッジ目標 **80%**（`regression.ts`, `settling.ts` 等のコアロジックは特に徹底）。
 
 ---
 

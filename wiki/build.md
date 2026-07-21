@@ -126,7 +126,25 @@ body {
 
 ## TypeScript 設定
 
-`tsconfig.json` はほぼ流用。`types` から `w3c-web-serial` / `w3c-web-usb` / `wicg-file-system-access` を維持（Web Serial API 型定義が必要）。
+TypeScript 7 + strict mode。`tsconfig.json` はほぼ流用。`types` から `w3c-web-serial` / `w3c-web-usb` / `wicg-file-system-access` を維持（Web Serial API 型定義が必要）。
+
+## Lint / Format
+
+**Biome** を使用。ESLint / Prettier は導入しない。
+
+```bash
+pnpm lint       # biome check
+pnpm lint:fix   # biome check --write
+```
+
+## テスト
+
+**Vitest** を使用。カバレッジ目標 80%（コアロジック: regression.ts, settling.ts）。
+
+```bash
+pnpm test      # vitest run
+pnpm test:cov  # vitest run --coverage
+```
 
 ## ビルド成果物
 

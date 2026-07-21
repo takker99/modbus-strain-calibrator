@@ -80,6 +80,18 @@ console.error(`${debugPrefix} transfer() CRC mismatch`, { ... });
 - `package.json` の `pyodide` への再追加禁止（ScriptRunner 廃止）
 - `react-rnd` は維持（FloatingWindow + ModbusConfigPanel は現状維持）
 
+## Lint / Format
+
+- **Biome** を使用（ESLint / Prettier は導入しない）
+- `pnpm lint` でチェック、`pnpm lint:fix` で自動修正
+- コミット前に `pnpm lint` と `pnpm typecheck` を通す
+
+## テスト
+
+- **Vitest**。`pnpm test` で実行、`pnpm test:cov` でカバレッジ計測
+- コアロジック（regression.ts, settling.ts）はカバレッジ 80% 目標
+- テストファイルは `*.test.ts` の命名で実装ファイルと同じディレクトリに配置
+
 ## 開発サーバー
 
 - 開発時の `base` は `/`（HMR/manifest サブパスの不具合回避）
