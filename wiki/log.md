@@ -202,6 +202,12 @@ Phase 0-3 までに残っていた Biome lint エラーを修正:
 - `App.tsx`: refState から currentRefPhysical を取得し CalibrationWorkbench に渡す
 - typecheck ✅ lint ✅
 
+## 2026-07-22 | feat | ref CH の raw/filtered を LiveChart に第二軸表示
+
+- `LiveChart.tsx`: refRawHistory / refFilteredHistory / currentRefRaw / currentRefFiltered / currentRefPhysical を props に追加。ref CH データがあるときだけ yaxis2（右側）に Ref Raw（amber）, Ref Filtered（blue）のトレースを表示。タイトルに ref CH 現在値も表示
+- `App.tsx`: ref CH の history と現在値を LiveChart に渡す
+- typecheck ✅ lint ✅
+
 - `useHx711Live.ts`: `HISTORY_SECONDS` 固定値（10）を削除し、`historyWindowSeconds` をパラメータ化
 - `LiveChart.tsx`: x 軸をサンプルインデックス → 相対時間（秒、負値で過去を表す）に変更、x 軸を表示するよう変更
 - `App.tsx`: `chartWindowSeconds` 状態を追加（localStorage 永続化）、ツールバーに Chart 時間選択 dropdown（5s〜10min）を追加
