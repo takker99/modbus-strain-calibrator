@@ -3,6 +3,8 @@ interface AppHeaderProps {
 	onConnect: () => void;
 	onDisconnect: () => void;
 	onToggleConfig: () => void;
+	samplingHz?: number;
+	actualHz?: number;
 }
 
 export function AppHeader({
@@ -10,6 +12,8 @@ export function AppHeader({
 	onConnect,
 	onDisconnect,
 	onToggleConfig,
+	samplingHz,
+	actualHz,
 }: AppHeaderProps) {
 	return (
 		<header className="flex items-center justify-between border-b border-slate-200 p-2 dark:border-slate-800">
@@ -22,6 +26,12 @@ export function AppHeader({
 				>
 					ModbusStrainCalibrator
 				</a>
+				{isConnected && samplingHz != null && (
+					<span className="hidden text-sm text-slate-500 dark:text-slate-400 sm:inline">
+						Sampling: {samplingHz.toFixed(1)} Hz / Actual:{" "}
+						{actualHz != null ? actualHz.toFixed(1) : "—"} Hz
+					</span>
+				)}
 			</div>
 
 			<div className="flex items-center gap-2">

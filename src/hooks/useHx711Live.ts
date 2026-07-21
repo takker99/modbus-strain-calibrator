@@ -16,6 +16,7 @@ interface UseHx711LiveOpts {
 	} | null;
 	channels: number[];
 	pollingMs: number;
+	historyWindowSeconds: number;
 	precision: Precision;
 	settling: SettlingConfig;
 	refCoeffs?: ReferenceSensorCoeffs;
@@ -26,10 +27,9 @@ interface UseHx711LiveReturn {
 	allStable: boolean;
 	timestamp: number;
 	isPolling: boolean;
+	actualHz: number;
 	history: Record<number, { raw: Float32Array; filtered: Float32Array }>;
 }
-
-const HISTORY_SECONDS = 10;
 
 function createRingBuffer(size: number): Float32Array {
 	return new Float32Array(size);
@@ -58,7 +58,15 @@ function applyRefPhysical(raw: number, coeffs: ReferenceSensorCoeffs): number {
 }
 
 export function useHx711Live(opts: UseHx711LiveOpts): UseHx711LiveReturn {
-	const { client, channels, pollingMs, precision, settling, refCoeffs } = opts;
+	const {
+		client,
+		channels,
+		pollingMs,
+		historyWindowSeconds,
+		precision,
+		settling,
+		refCoeffs,
+	} = opts;
 
 	const [channelStates, setChannelStates] = useState<
 		Record<number, ChannelLiveState>
@@ -90,6 +98,8 @@ export function useHx711Live(opts: UseHx711LiveOpts): UseHx711LiveReturn {
 	>({});
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+	const lastPollTimeRef = useRef(0);
+	const [actualHz, setActualHz] = useState(0);
 
 	// Re-initialize detectors when channels or settling config changes
 	useEffect(() => {
@@ -99,21 +109,57 @@ export function useHx711Live(opts: UseHx711LiveOpts): UseHx711LiveReturn {
 			detectors.set(ch, new SettlingDetector(settling, pollingMs));
 		}
 
-		const historySize = Math.ceil(HISTORY_SECONDS / (pollingMs / 1000));
+		const historySize = Math.ceil(historyWindowSeconds / (pollingMs / 1000));
 		for (const ch of channels) {
-			if (!historyRef.current[ch]) {
-				historyRef.current[ch] = {
-					raw: createRingBuffer(historySize),
-					filtered: createRingBuffer(historySize),
-					pos: 0,
-					size: historySize,
-				};
+			const existing = historyRef.current[ch];
+			if (!existing || existing.size !== historySize) {
+				if (existing) {
+					const oldSize = existing.size;
+					const orderedRaw = new Float32Array(oldSize);
+					const orderedFiltered = new Float32Array(oldSize);
+					const oldPos = existing.pos;
+					for (let i = 0; i < oldSize; i++) {
+						const srcIdx = (oldPos + i) % oldSize;
+						orderedRaw[i] = existing.raw[srcIdx];
+						orderedFiltered[i] = existing.filtered[srcIdx];
+					}
+
+					const newRaw = createRingBuffer(historySize);
+					const newFiltered = createRingBuffer(historySize);
+					const copyCount = Math.min(oldSize, historySize);
+					const srcOffset = oldSize - copyCount;
+					for (let i = 0; i < copyCount; i++) {
+						newRaw[i] = orderedRaw[srcOffset + i];
+						newFiltered[i] = orderedFiltered[srcOffset + i];
+					}
+					historyRef.current[ch] = {
+						raw: newRaw,
+						filtered: newFiltered,
+						pos: copyCount % historySize,
+						size: historySize,
+					};
+				} else {
+					historyRef.current[ch] = {
+						raw: createRingBuffer(historySize),
+						filtered: createRingBuffer(historySize),
+						pos: 0,
+						size: historySize,
+					};
+				}
 			}
 		}
-	}, [channels, settling, pollingMs]);
+	}, [channels, settling, pollingMs, historyWindowSeconds]);
 
 	const poll = useCallback(async () => {
 		if (!client) return;
+
+		const now = performance.now();
+		if (lastPollTimeRef.current !== 0) {
+			const dt = now - lastPollTimeRef.current;
+			const instHz = 1000 / dt;
+			setActualHz((prev) => (prev === 0 ? instHz : prev * 0.9 + instHz * 0.1));
+		}
+		lastPollTimeRef.current = now;
 
 		const newStates: Record<number, ChannelLiveState> = {};
 		let allStable_ = true;
@@ -211,5 +257,12 @@ export function useHx711Live(opts: UseHx711LiveOpts): UseHx711LiveReturn {
 		}
 	}
 
-	return { channels: channelStates, allStable, timestamp, isPolling, history };
+	return {
+		channels: channelStates,
+		allStable,
+		timestamp,
+		isPolling,
+		actualHz,
+		history,
+	};
 }

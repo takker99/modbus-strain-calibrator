@@ -58,6 +58,16 @@ const PRECISION_OPTIONS = [
 	{ label: "Normal (i16)", value: "normal" as ModbusPrecision },
 	{ label: "Extended (f32)", value: "extended" as ModbusPrecision },
 ];
+const CHART_WINDOW_OPTIONS = [
+	{ label: "5s", value: 5 },
+	{ label: "10s", value: 10 },
+	{ label: "30s", value: 30 },
+	{ label: "1min", value: 60 },
+	{ label: "2min", value: 120 },
+	{ label: "5min", value: 300 },
+	{ label: "10min", value: 600 },
+];
+
 const POLLING_OPTIONS: PollingRateOption[] = [
 	{ label: "50 ms", valueMs: 50 },
 	{ label: "100 ms", valueMs: 100 },
@@ -84,6 +94,7 @@ const DEFAULT_SERIAL: SerialSettings = {
 const SETTINGS_KEY = "settings_v1";
 const REF_COEFFS_KEY = "reference_sensors_v1";
 const POLLING_RATE_KEY = "pollingRate_v1";
+const CHART_WINDOW_KEY = "chartWindow_v1";
 
 const DEFAULT_SETTINGS: AppSettings = {
 	mode: "1port",
@@ -154,6 +165,15 @@ export default function App() {
 		writeJsonStorage(POLLING_RATE_KEY, { valueMs: pollingRate.valueMs });
 	}, [pollingRate]);
 
+	const [chartWindowSeconds, setChartWindowSeconds] = useState<number>(() => {
+		const saved = readJsonStorage<{ value: number }>(CHART_WINDOW_KEY);
+		return saved?.value ?? CHART_WINDOW_OPTIONS[1].value;
+	});
+
+	useEffect(() => {
+		writeJsonStorage(CHART_WINDOW_KEY, { value: chartWindowSeconds });
+	}, [chartWindowSeconds]);
+
 	const liveChannels = useMemo(() => {
 		if (cal.mode === "2port") return [settings.targetCh, settings.refCh];
 		return [settings.targetCh];
@@ -163,6 +183,7 @@ export default function App() {
 		client,
 		channels: liveChannels,
 		pollingMs: pollingRate.valueMs,
+		historyWindowSeconds: chartWindowSeconds,
 		precision: settings.modbusPrecision,
 		settling: settings.settling,
 		refCoeffs: cal.mode === "2port" ? refCoeffs : undefined,
@@ -236,6 +257,8 @@ export default function App() {
 				onConnect={handleConnect}
 				onDisconnect={handleDisconnect}
 				onToggleConfig={() => setConfigOpen((v) => !v)}
+				samplingHz={connected ? 1000 / pollingRate.valueMs : undefined}
+				actualHz={connected ? live.actualHz : undefined}
 			/>
 
 			{connectionError && (
@@ -358,6 +381,21 @@ export default function App() {
 							className="w-14 rounded border border-slate-300 bg-white px-1 py-0.5 text-right font-mono text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</label>
+					<span className="ml-2 text-slate-400 dark:text-slate-600">|</span>
+					<label className="flex items-center gap-1">
+						<span>Chart:</span>
+						<select
+							value={chartWindowSeconds}
+							onChange={(e) => setChartWindowSeconds(Number(e.target.value))}
+							className="rounded border border-slate-300 bg-white px-1 py-0.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						>
+							{CHART_WINDOW_OPTIONS.map((opt) => (
+								<option key={opt.value} value={opt.value}>
+									{opt.label}
+								</option>
+							))}
+						</select>
+					</label>
 				</div>
 			</div>
 
@@ -379,6 +417,7 @@ export default function App() {
 								currentPhysical={targetState?.physical ?? 0}
 								isStable={targetState?.stable ?? false}
 								isDark={isDarkMode}
+								historyWindowSeconds={chartWindowSeconds}
 							/>
 						</div>
 						<div className="card flex-1">
