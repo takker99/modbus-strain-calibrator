@@ -10,8 +10,6 @@ export class SettlingDetector {
 	private initialized = false;
 	private buffer: number[] = [];
 	private bufferSize: number;
-	private consecutiveStable = 0;
-	private consecutiveRequired: number;
 	private tolerance: number;
 
 	constructor(config: SettlingConfig, samplingIntervalMs = 200) {
@@ -20,7 +18,6 @@ export class SettlingDetector {
 			1 - Math.exp(-2 * Math.PI * config.cutoffFrequency * samplingInterval);
 		this.tolerance = config.tolerance;
 		this.bufferSize = Math.ceil(config.windowSeconds / samplingInterval);
-		this.consecutiveRequired = this.bufferSize;
 	}
 
 	update(raw: number): { filtered: number; stable: boolean; range: number } {
@@ -50,12 +47,7 @@ export class SettlingDetector {
 		}
 
 		if (this.buffer.length >= this.bufferSize && range <= this.tolerance) {
-			this.consecutiveStable++;
-			if (this.consecutiveStable >= this.consecutiveRequired) {
-				return { filtered, stable: true, range };
-			}
-		} else {
-			this.consecutiveStable = 0;
+			return { filtered, stable: true, range };
 		}
 
 		return { filtered, stable: false, range };
@@ -65,6 +57,5 @@ export class SettlingDetector {
 		this.filtered = 0;
 		this.initialized = false;
 		this.buffer = [];
-		this.consecutiveStable = 0;
 	}
 }
