@@ -187,3 +187,8 @@ Phase 0-3 までに残っていた Biome lint エラーを修正:
 - `src/index.css` の `@apply` を CSS カスタムプロパティによるテーマ変数に置き換え
 - `main.tsx` に生成ファイル `tailwind.gen.css` の import を追加
 - ビルドパイプライン: `dev:css (--watch) & vite dev` / `build:css && vite build`
+
+## 2026-07-22 | refactor | raw counts display shows 4 decimal places
+
+- `CalibrationWorkbench.tsx:40` の `formatX()` で raw 単位の表示を `x.toFixed(0)` → `x.toFixed(4)` に変更
+- EMA フィルタ後の浮動小数点値が確認できるようになった

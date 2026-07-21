@@ -37,7 +37,7 @@ function formatX(x: number, unit: XUnit): string {
 			value = hx711RawToMvPerV(x) * 2000;
 			return value.toFixed(2);
 		default:
-			return x.toFixed(0);
+			return x.toFixed(4);
 	}
 }
 
