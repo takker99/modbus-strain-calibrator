@@ -171,3 +171,13 @@ Phase 0-3 までに残っていた Biome lint エラーを修正:
 - **x の単位切替**: raw counts / mV/V / με を選択可能。係数 a,b,c も換算表示
 - **エクスポート簡略化**: CSV/JSON から index, iso8601 を削除
 - **コンポーネント**: Hx711LiveCard → LiveChart, RegressionChart → RegressionPlot に置き換え
+
+## 2026-07-22 | refactor | PostCSS 除去 + Tailwind standalone CLI 移行
+
+- `postcss`, `@tailwindcss/postcss`, `autoprefixer` を削除
+- `@tailwindcss/cli` を追加（standalone CLI）
+- `postcss.config.js`, `tailwind.config.js` を削除
+- `src/tailwind.src.css` を作成（CLI 入力: `@import "tailwindcss"` + `@custom-variant dark`）
+- `src/index.css` の `@apply` を CSS カスタムプロパティによるテーマ変数に置き換え
+- `main.tsx` に生成ファイル `tailwind.gen.css` の import を追加
+- ビルドパイプライン: `dev:css (--watch) & vite dev` / `build:css && vite build`
