@@ -43,7 +43,7 @@ timestamp  ai_raw_00  ai_raw_01  ...  ai_phy_00  ...  ao_raw_00  ...  ai_vlt_00 
 ### 検定アプリでの扱い
 
 - **完全削除**し、軽量な **CSV ライター**に置換。
-- 出力は検定点 (x, y)、係数 (a, b, c, モデル次数, R², RMSE, 計測日時)
+- 出力は検定点 (x, y)、係数 (a0, a1, a2, モデル次数, R², RMSE, 計測日時)
 - File System Access API は使わず、Blob + `URL.createObjectURL` + `<a download>` で十分（モダンブラウザで動く）
 - もしくは File System Access API を残して「続行」ボタン付きダイアログ対応も可（後述の設計ドキュメント参照）
 
@@ -64,7 +64,7 @@ writeJsonCookie(key, value): void   // localStorage への書き込み（Cookie 
 
 - **残す**（ただし簡略化）。
 - 永続化する値:
-  - キャリブレーション結果（チャネルごと、`{degree, a, b, c, r2, rmse, updatedAt, points}`）
+  - キャリブレーション結果（チャネルごと、`{degree, a0, a1, a2, r2, rmse, updatedAt, points}`）
   - 選択中のモード（1-port / 2-port）
   - 選択中の HX711 ポート番号
   - ダーク/ライトテーマ

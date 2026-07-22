@@ -10,9 +10,9 @@ export function calibrationToCsv(
 		`# ModbusStrainCalibrator v${import.meta.env.VITE_APP_VERSION ?? "0.0.0"}`,
 	);
 	lines.push(`# degree=${result.degree}`);
-	lines.push(`# a=${result.a}`);
-	lines.push(`# b=${result.b}`);
-	lines.push(`# c=${result.c}`);
+	lines.push(`# a2=${result.a2}`);
+	lines.push(`# a1=${result.a1}`);
+	lines.push(`# a0=${result.a0}`);
 	lines.push(`# r2=${result.r2}`);
 	lines.push(`# rmse=${result.rmse}`);
 	lines.push(`# n=${result.n}`);

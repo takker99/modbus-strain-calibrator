@@ -4,9 +4,9 @@ export type RegressionDegree = 1 | 2;
 
 export type RegressionResult = {
 	degree: RegressionDegree;
-	a: number;
-	b: number;
-	c: number;
+	a0: number;
+	a1: number;
+	a2: number;
 	r2: number;
 	rmse: number;
 	n: number;
@@ -61,12 +61,12 @@ function fitLinear(points: RegressionInput[]): RegressionOutcome {
 		return { ok: false, error: "All x values are identical" };
 	}
 
-	const a = sxy / sxx;
-	const b = yMean - a * xMean;
-	const c = 0;
+	const a2 = 0;
+	const a1 = sxy / sxx;
+	const a0 = yMean - a1 * xMean;
 
 	const ssRes = points.reduce((sum_, p) => {
-		const residual = p.y - (a * p.x + b);
+		const residual = p.y - (a1 * p.x + a0);
 		return sum_ + residual * residual;
 	}, 0);
 	const ssTot = points.reduce((sum_, p) => {
@@ -78,7 +78,7 @@ function fitLinear(points: RegressionInput[]): RegressionOutcome {
 
 	return {
 		ok: true,
-		value: { degree: 1, a, b, c, r2, rmse, n },
+		value: { degree: 1, a0, a1, a2, r2, rmse, n },
 	};
 }
 
@@ -107,25 +107,25 @@ function fitQuadratic(points: RegressionInput[]): RegressionOutcome {
 		};
 	}
 
-	const aNum =
+	const a2Num =
 		n * (sx2 * sx2y - sxy * sx3) -
 		sx * (sx * sx2y - sxy * sx2) +
 		sy * (sx * sx3 - sx2 * sx2);
-	const bNum =
+	const a1Num =
 		n * (sxy * sx4 - sx3 * sx2y) -
 		sy * (sx * sx4 - sx3 * sx2) +
 		sx2 * (sx * sx2y - sxy * sx2);
-	const cNum =
+	const a0Num =
 		sy * (sx2 * sx4 - sx3 * sx3) -
 		sx * (sxy * sx4 - sx3 * sx2y) +
 		sx2 * (sxy * sx3 - sx2 * sx2y);
 
-	const a = aNum / det;
-	const b = bNum / det;
-	const c = cNum / det;
+	const a2 = a2Num / det;
+	const a1 = a1Num / det;
+	const a0 = a0Num / det;
 
 	const ssRes = points.reduce((sum_, p) => {
-		const residual = p.y - (a * p.x * p.x + b * p.x + c);
+		const residual = p.y - (a2 * p.x * p.x + a1 * p.x + a0);
 		return sum_ + residual * residual;
 	}, 0);
 	const yMean = mean(ys);
@@ -138,6 +138,6 @@ function fitQuadratic(points: RegressionInput[]): RegressionOutcome {
 
 	return {
 		ok: true,
-		value: { degree: 2, a, b, c, r2, rmse, n },
+		value: { degree: 2, a0, a1, a2, r2, rmse, n },
 	};
 }

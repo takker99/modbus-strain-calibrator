@@ -14,9 +14,9 @@ describe("fitRegression (linear)", () => {
 		const result = fitRegression(points, 1);
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.a).toBeCloseTo(2, 10);
-		expect(result.value.b).toBeCloseTo(1, 10);
-		expect(result.value.c).toBe(0);
+		expect(result.value.a2).toBe(0);
+		expect(result.value.a1).toBeCloseTo(2, 10);
+		expect(result.value.a0).toBeCloseTo(1, 10);
 		expect(result.value.r2).toBeCloseTo(1, 10);
 		expect(result.value.rmse).toBeCloseTo(0, 10);
 		expect(result.value.n).toBe(5);
@@ -34,8 +34,8 @@ describe("fitRegression (linear)", () => {
 		const result = fitRegression(points, 1);
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.a).toBeCloseTo(2.05, 2);
-		expect(result.value.b).toBeCloseTo(0.94, 2);
+		expect(result.value.a1).toBeCloseTo(2.05, 2);
+		expect(result.value.a0).toBeCloseTo(0.94, 2);
 		expect(result.value.r2).toBeGreaterThan(0.99);
 	});
 
@@ -67,8 +67,8 @@ describe("fitRegression (linear)", () => {
 		const result = fitRegression(points, 1);
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.a).toBeCloseTo(0, 10);
-		expect(result.value.b).toBeCloseTo(5, 10);
+		expect(result.value.a1).toBeCloseTo(0, 10);
+		expect(result.value.a0).toBeCloseTo(5, 10);
 		expect(result.value.r2).toBeCloseTo(1, 10);
 	});
 });
@@ -85,9 +85,9 @@ describe("fitRegression (quadratic)", () => {
 		const result = fitRegression(points, 2);
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.a).toBeCloseTo(3, 8);
-		expect(result.value.b).toBeCloseTo(2, 8);
-		expect(result.value.c).toBeCloseTo(1, 8);
+		expect(result.value.a2).toBeCloseTo(3, 8);
+		expect(result.value.a1).toBeCloseTo(2, 8);
+		expect(result.value.a0).toBeCloseTo(1, 8);
 		expect(result.value.r2).toBeCloseTo(1, 10);
 		expect(result.value.degree).toBe(2);
 	});
@@ -125,9 +125,9 @@ describe("fitRegression (quadratic)", () => {
 		const result = fitRegression(points, 2);
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.a).toBeCloseTo(0, 5);
-		expect(result.value.b).toBeCloseTo(2, 5);
-		expect(result.value.c).toBeCloseTo(1, 5);
+		expect(result.value.a2).toBeCloseTo(0, 5);
+		expect(result.value.a1).toBeCloseTo(2, 5);
+		expect(result.value.a0).toBeCloseTo(1, 5);
 		expect(result.value.r2).toBeCloseTo(1, 10);
 	});
 });

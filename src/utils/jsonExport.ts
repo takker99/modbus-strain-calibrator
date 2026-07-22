@@ -5,7 +5,7 @@ export type CalibrationJson = {
 	version: string;
 	exportedAt: string;
 	degree: number;
-	coefficients: { a: number; b: number; c: number };
+	coefficients: { a0: number; a1: number; a2: number };
 	metrics: { r2: number; rmse: number };
 	points: { timestamp: number; x: number; y: number }[];
 };
@@ -19,7 +19,7 @@ export function calibrationToJson(
 		version: import.meta.env.VITE_APP_VERSION ?? "0.0.0",
 		exportedAt: new Date().toISOString(),
 		degree: result.degree,
-		coefficients: { a: result.a, b: result.b, c: result.c },
+		coefficients: { a2: result.a2, a1: result.a1, a0: result.a0 },
 		metrics: { r2: result.r2, rmse: result.rmse },
 		points: points.map((p) => ({
 			timestamp: p.timestamp,

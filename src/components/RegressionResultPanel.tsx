@@ -31,30 +31,22 @@ export function RegressionResultPanel({
 				Coefficients (x: raw counts)
 			</div>
 			<div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-				<span className="text-slate-500 dark:text-slate-400">a =</span>
-				<span className="text-right font-mono text-slate-900 dark:text-slate-100">
-					{result.a.toExponential(6)}
-				</span>
 				{result.degree === 2 && (
 					<>
-						<span className="text-slate-500 dark:text-slate-400">b =</span>
+						<span className="text-slate-500 dark:text-slate-400">a2 =</span>
 						<span className="text-right font-mono text-slate-900 dark:text-slate-100">
-							{result.b.toExponential(6)}
-						</span>
-						<span className="text-slate-500 dark:text-slate-400">c =</span>
-						<span className="text-right font-mono text-slate-900 dark:text-slate-100">
-							{result.c.toExponential(6)}
+							{result.a2.toExponential(6)}
 						</span>
 					</>
 				)}
-				{result.degree === 1 && (
-					<>
-						<span className="text-slate-500 dark:text-slate-400">b =</span>
-						<span className="text-right font-mono text-slate-900 dark:text-slate-100">
-							{result.b.toExponential(6)}
-						</span>
-					</>
-				)}
+				<span className="text-slate-500 dark:text-slate-400">a1 =</span>
+				<span className="text-right font-mono text-slate-900 dark:text-slate-100">
+					{result.a1.toExponential(6)}
+				</span>
+				<span className="text-slate-500 dark:text-slate-400">a0 =</span>
+				<span className="text-right font-mono text-slate-900 dark:text-slate-100">
+					{result.a0.toExponential(6)}
+				</span>
 			</div>
 			<div className="grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1">
 				<span className="text-slate-500 dark:text-slate-400">R² =</span>

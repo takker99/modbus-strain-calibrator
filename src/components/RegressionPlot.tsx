@@ -32,12 +32,7 @@ export function RegressionPlot({
 		const x1 = xMax + padding;
 
 		const xFit = [x0, x1];
-		let yFit: number[];
-		if (result.degree === 2) {
-			yFit = xFit.map((x) => result.a * x * x + result.b * x + result.c);
-		} else {
-			yFit = xFit.map((x) => result.a * x + result.b);
-		}
+		const yFit = xFit.map((x) => result.a0 + result.a1 * x + result.a2 * x * x);
 
 		traces.push({
 			x: xFit,

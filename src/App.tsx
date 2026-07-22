@@ -139,14 +139,25 @@ export default function App() {
 	const cal = useCalibration();
 
 	const [refCoeffs, setRefCoeffs] = useState<ReferenceSensorCoeffs>(() => {
-		return (
-			readJsonStorage<ReferenceSensorCoeffs>(REF_COEFFS_KEY) ?? {
-				degree: 1,
-				a: 1,
-				b: 0,
-				c: 0,
+		const saved = readJsonStorage(REF_COEFFS_KEY) as Record<
+			string,
+			unknown
+		> | null;
+		if (saved) {
+			if ("a0" in saved) {
+				return saved as unknown as ReferenceSensorCoeffs;
 			}
-		);
+			// migrate from old { a, b, c, degree } format
+			const deg = (saved.degree ?? 1) as CalibrationDegree;
+			const oldA = (saved.a as number) ?? 0;
+			const oldB = (saved.b as number) ?? 0;
+			const oldC = (saved.c as number) ?? 0;
+			if (deg === 1) {
+				return { degree: 1, a0: oldB, a1: oldA, a2: 0 };
+			}
+			return { degree: 2, a0: oldC, a1: oldB, a2: oldA };
+		}
+		return { degree: 1, a0: 0, a1: 1, a2: 0 };
 	});
 
 	useEffect(() => {
@@ -299,26 +310,44 @@ export default function App() {
 							<option value={1}>1st</option>
 							<option value={2}>2nd</option>
 						</select>
-						{(["a", "b", "c"] as const).map((param) => (
-							<label
-								key={param}
-								className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400"
-							>
-								{param}=
+						{refCoeffs.degree === 2 && (
+							<label className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400">
+								a2=
 								<input
 									type="number"
 									step="any"
-									value={refCoeffs[param]}
+									value={refCoeffs.a2}
 									onChange={(e) =>
-										setRefCoeffs((r) => ({
-											...r,
-											[param]: Number(e.target.value),
-										}))
+										setRefCoeffs((r) => ({ ...r, a2: Number(e.target.value) }))
 									}
 									className="w-16 rounded border border-slate-300 bg-white px-1 py-0.5 text-right font-mono text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 								/>
 							</label>
-						))}
+						)}
+						<label className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400">
+							a1=
+							<input
+								type="number"
+								step="any"
+								value={refCoeffs.a1}
+								onChange={(e) =>
+									setRefCoeffs((r) => ({ ...r, a1: Number(e.target.value) }))
+								}
+								className="w-16 rounded border border-slate-300 bg-white px-1 py-0.5 text-right font-mono text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+							/>
+						</label>
+						<label className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400">
+							a0=
+							<input
+								type="number"
+								step="any"
+								value={refCoeffs.a0}
+								onChange={(e) =>
+									setRefCoeffs((r) => ({ ...r, a0: Number(e.target.value) }))
+								}
+								className="w-16 rounded border border-slate-300 bg-white px-1 py-0.5 text-right font-mono text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+							/>
+						</label>
 					</>
 				)}
 				<div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">

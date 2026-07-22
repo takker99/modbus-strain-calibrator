@@ -51,10 +51,7 @@ function readChannelValue(
 }
 
 function applyRefPhysical(raw: number, coeffs: ReferenceSensorCoeffs): number {
-	if (coeffs.degree === 2) {
-		return coeffs.a * raw * raw + coeffs.b * raw + coeffs.c;
-	}
-	return coeffs.a * raw + coeffs.b;
+	return coeffs.a0 + coeffs.a1 * raw + coeffs.a2 * raw * raw;
 }
 
 export function useHx711Live(opts: UseHx711LiveOpts): UseHx711LiveReturn {

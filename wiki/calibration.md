@@ -87,32 +87,33 @@ JSON 形式:
 
 ## 検定アプリで必要な機能（最小二乗）
 
-### 1. 線形回帰（1次）: y = a·x + b
+### 1. 線形回帰（1次）: y = a0 + a1·x (a2=0)
 
 ```ts
 // x: HX711 raw, y: 印加値 or 参照センサ値
-function fitLinear(points: { x: number; y: number }[]): { a: number; b: number; r2: number; rmse: number } {
+// y = a0 + a1·x  (a2 = 0)
+function fitLinear(points: { x: number; y: number }[]): { a0: number; a1: number; a2: 0; r2: number; rmse: number } {
   const n = points.length;
   if (n < 2) throw new Error('At least 2 points are required for linear regression');
   const mean = (k: 'x' | 'y') => points.reduce((s, p) => s + p[k], 0) / n;
   const mx = mean('x'), my = mean('y');
   let sxx = 0, sxy = 0;
   for (const p of points) { sxx += (p.x - mx) ** 2; sxy += (p.x - mx) * (p.y - my); }
-  const a = sxy / sxx;
-  const b = my - a * mx;
+  const a1 = sxy / sxx;
+  const a0 = my - a1 * mx;
   // R² と RMSE
-  const ssRes = points.reduce((s, p) => s + (p.y - (a * p.x + b)) ** 2, 0);
+  const ssRes = points.reduce((s, p) => s + (p.y - (a1 * p.x + a0)) ** 2, 0);
   const ssTot = points.reduce((s, p) => s + (p.y - my) ** 2, 0);
   const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
   const rmse = Math.sqrt(ssRes / n);
-  return { a, b, r2, rmse };
+  return { a0, a1, a2: 0, r2, rmse };
 }
 ```
 
-### 2. 多項式回帰（2次）: y = a·x² + b·x + c
+### 2. 多項式回帰（2次）: y = a0 + a1·x + a2·x²
 
 ```ts
-function fitPolynomial(points: { x: number; y: number }[]): { a: number; b: number; c: number; r2: number; rmse: number } {
+function fitQuadratic(points: { x: number; y: number }[]): { a0: number; a1: number; a2: number; r2: number; rmse: number } {
   const n = points.length;
   if (n < 3) throw new Error('At least 3 points are required for quadratic regression');
   // Normal equations: A^T A β = A^T y
@@ -130,16 +131,16 @@ function fitPolynomial(points: { x: number; y: number }[]): { a: number; b: numb
   const A = [[s00, s01, s02], [s01, s11, s12], [s02, s12, s22]];
   const bVec = [t0, t1, t2];
   const d = det(A);
-  const a = det([[bVec[0], s01, s02], [bVec[1], s11, s12], [bVec[2], s12, s22]]) / d;
-  const b = det([[s00, bVec[0], s02], [s01, bVec[1], s12], [s02, bVec[2], s22]]) / d;
-  const c = det([[s00, s01, bVec[0]], [s01, s11, bVec[1]], [s02, s12, bVec[2]]]) / d;
+  const a2 = det([[bVec[0], s01, s02], [bVec[1], s11, s12], [bVec[2], s12, s22]]) / d;
+  const a1 = det([[s00, bVec[0], s02], [s01, bVec[1], s12], [s02, bVec[2], s22]]) / d;
+  const a0 = det([[s00, s01, bVec[0]], [s01, s11, bVec[1]], [s02, s12, bVec[2]]]) / d;
   // R² / RMSE
   const my = points.reduce((s, p) => s + p.y, 0) / n;
-  const ssRes = points.reduce((s, p) => s + (p.y - (a * p.x * p.x + b * p.x + c)) ** 2, 0);
+  const ssRes = points.reduce((s, p) => s + (p.y - (a2 * p.x * p.x + a1 * p.x + a0)) ** 2, 0);
   const ssTot = points.reduce((s, p) => s + (p.y - my) ** 2, 0);
   const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
   const rmse = Math.sqrt(ssRes / n);
-  return { a, b, c, r2, rmse };
+  return { a0, a1, a2, r2, rmse };
 }
 ```
 
@@ -154,9 +155,9 @@ type CalibrationDegree = 1 | 2;
 type CalibrationResult = {
   ch: number;                       // HX711 ポート番号
   degree: CalibrationDegree;       // 1 or 2
-  // degree === 1:  a, b
-  // degree === 2:  a, b, c
-  a: number; b: number; c: number;
+  // y = a0 + a1·x + a2·x²
+  // degree=1 では a2=0
+  a0: number; a1: number; a2: number;
   r2: number;
   rmse: number;
   points: CalibrationPoint[];

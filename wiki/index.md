@@ -20,7 +20,7 @@
 | [modbus-client.md](modbus-client.md) | `webserialClient.ts` の中身・AsyncMutex・CRC16・Function Code | ✅ 確定 |
 | [polling.md](polling.md) | ポーリングループ・状態管理・リトライ・Wake Lock | ✅ 確定 |
 | [data-persistence.md](data-persistence.md) | IndexedDB・TSV ストリーミング・localStorage | ✅ 確定 |
-| [calibration.md](calibration.md) | 既存 `a·x²+b·x+c` キャリブレーション + 検定用最小二乗の数式 | ✅ 確定 |
+| [calibration.md](calibration.md) | 最小二乗（`y = a0 + a1·x + a2·x²`） + 既存キャリブレーション | ✅ 確定 |
 | [pwa-sw.md](pwa-sw.md) | PWA・Service Worker・COOP/COEP・プリキャッシュ | ✅ 確定 |
 | [build.md](build.md) | Vite・Tailwind・Plotly 設定・pnpm 移行 | ✅ 確定 |
 | [conventions.md](conventions.md) | 命名規則・エラーハンドリング・禁止事項 | ✅ 確定 |

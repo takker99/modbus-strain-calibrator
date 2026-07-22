@@ -212,3 +212,15 @@ Phase 0-3 までに残っていた Biome lint エラーを修正:
 - `LiveChart.tsx`: x 軸をサンプルインデックス → 相対時間（秒、負値で過去を表す）に変更、x 軸を表示するよう変更
 - `App.tsx`: `chartWindowSeconds` 状態を追加（localStorage 永続化）、ツールバーに Chart 時間選択 dropdown（5s〜10min）を追加
 - `LiveChart.tsx` に `historyWindowSeconds` prop を追加、x 軸ラベルに `ticksuffix: " s"` を設定
+
+## 2026-07-22 | refactor | 係数 a/b/c → a0/a1/a2 一貫命名
+
+多項式係数の命名を `a, b, c`（次数によって意味が変わる）から `a0, a1, a2`（常に `y = a0 + a1·x + a2·x²`）に変更:
+
+- 理由: 従来は degree=1 で `a`=傾き, degree=2 で `a`=x²係数 と意味が変化。`a0`=定数項, `a1`=x係数, `a2`=x²係数 で統一
+- `src/types.ts`, `src/utils/regression.ts`, `src/utils/regression.test.ts`, `src/hooks/useCalibration.ts`, `src/hooks/useHx711Live.ts` を更新
+- `src/components/RegressionResultPanel.tsx`, `src/components/RegressionPlot.tsx`, `src/App.tsx` を更新
+- `src/utils/csvExport.ts`, `src/utils/jsonExport.ts` を更新
+- `App.tsx`: localStorage `reference_sensors_v1` の旧フォーマット（`{a,b,c,degree}`）からのマイグレーション処理を追加
+- ドキュメント: `wiki/design-strain-calibrator.md`, `wiki/calibration.md`, `wiki/data-persistence.md`, `wiki/index.md` を更新
+- subagent 相談済み ✅

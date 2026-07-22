@@ -28,9 +28,9 @@ export type CalibrationResult = {
 	ch: number;
 	mode: "1port" | "2port";
 	degree: CalibrationDegree;
-	a: number;
-	b: number;
-	c: number;
+	a0: number;
+	a1: number;
+	a2: number;
 	r2: number;
 	rmse: number;
 	n: number;
@@ -43,9 +43,9 @@ export type CalibrationResult = {
 
 export type ReferenceSensorCoeffs = {
 	degree: CalibrationDegree;
-	a: number;
-	b: number;
-	c: number;
+	a0: number;
+	a1: number;
+	a2: number;
 };
 
 export type ChannelLiveState = {
