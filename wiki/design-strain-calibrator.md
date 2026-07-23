@@ -534,10 +534,10 @@ export function downloadJson<T>(filename: string, data: T): void;
 
 ## 10. PWA / Service Worker
 
-既存 `public/sw.js` を維持。`BASE_PATH` を `/modbus_strain_calibrator/` に変更。
+既存 `public/sw.js` を維持。`BASE_PATH` を `/modbus-strain-calibrator/` に変更。
 
 ```js
-const BASE_PATH = '/modbus_strain_calibrator/';
+const BASE_PATH = '/modbus-strain-calibrator/';
 const CACHE_NAME = `modbus-calibrator-${CACHE_VERSION}`;
 ```
 
@@ -624,7 +624,7 @@ pnpm test:cov         # vitest --coverage (目標 80%)
 
 # ビルド
 pnpm build            # → dist/
-pnpm preview          # → http://localhost:4173/modbus_strain_calibrator/
+pnpm preview          # → http://localhost:4173/modbus-strain-calibrator/
 ```
 
 `deploy.yml` は `pnpm` アクションに置換:

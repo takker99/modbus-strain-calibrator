@@ -68,7 +68,7 @@ export default defineConfig(({ command, isPreview }) => ({
     'import.meta.env.VITE_APP_NAME': JSON.stringify(pkg.name),
     global: 'globalThis',                   // Plotly 内部の Node `global` シム
   },
-  base: command === 'build' || isPreview ? '/modbus_strain_calibrator/' : '/',
+  base: command === 'build' || isPreview ? '/modbus-strain-calibrator/' : '/',
   build: {
     target: 'es2022',
     rollupOptions: { output: { manualChunks: /* react-vendor / vendor */ } },

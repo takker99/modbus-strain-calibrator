@@ -61,13 +61,13 @@ const ISOLATION_HEADERS = {
 
 ```ts
 plugins: [react(), pyodideAssets(), precacheManifest()]   // pyodideAssets は検定アプリで削除
-base: command === 'build' || isPreview ? '/modbus_strain_calibrator/' : '/',
+base: command === 'build' || isPreview ? '/modbus-strain-calibrator/' : '/',
 server:  { headers: { 'COOP': 'same-origin', 'COEP': 'require-corp' } },
 preview: { headers: { 'COOP': 'same-origin', 'COEP': 'require-corp' } },
 ```
 
 - `base` は GitHub Pages の subdir に合わせる。`index.html` と `manifest.json` は **base 相対**で記述する。
-- 検定アプリ用に subdir を `/modbus_strain_calibrator/` に変更する（リポジトリ名に合わせる）。
+- 検定アプリ用に subdir を `/modbus-strain-calibrator/` に変更する（リポジトリ名に合わせる）。
 
 ## 検定アプリでの簡略化
 

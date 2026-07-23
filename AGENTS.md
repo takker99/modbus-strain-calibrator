@@ -98,7 +98,7 @@ pnpm lint:fix     # biome check --write
 pnpm test         # vitest
 pnpm test:cov     # vitest --coverage (目標 80%)
 pnpm build
-pnpm preview      # http://localhost:4173/modbus_strain_calibrator/
+pnpm preview      # http://localhost:4173/modbus-strain-calibrator/
 ```
 
 ---
@@ -144,7 +144,7 @@ pnpm preview      # http://localhost:4173/modbus_strain_calibrator/
 
 **ビルド設定**:
 - 開発時の `base` は `/`（HMR/manifest サブパスの不具合回避）
-- ビルド / プレビューは `/modbus_strain_calibrator/`
+- ビルド / プレビューは `/modbus-strain-calibrator/`
 - `index.css` は `@import "tailwindcss"` + `@custom-variant dark`（Tailwind 4 記法）
 - 定数は `src/constants.ts` に一元化
 

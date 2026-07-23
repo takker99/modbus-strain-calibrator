@@ -95,7 +95,7 @@ console.error(`${debugPrefix} transfer() CRC mismatch`, { ... });
 ## 開発サーバー
 
 - 開発時の `base` は `/`（HMR/manifest サブパスの不具合回避）
-- ビルド / プレビューは `/modbus_strain_calibrator/`（GitHub Pages の subdir）
+- ビルド / プレビューは `/modbus-strain-calibrator/`（GitHub Pages の subdir）
 - `index.html` と `manifest.json` は **base 相対**で記述（`./icon.svg` のように）
 
 ## 関連ページ

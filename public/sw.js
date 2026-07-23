@@ -9,7 +9,7 @@ const CACHE_VERSION = "dev";
 // for unbuilt `vite dev`.
 const APP_VERSION = "";
 const CACHE_NAME = `modbus-calibrator-${CACHE_VERSION}`;
-const BASE_PATH = "/modbus_strain_calibrator/";
+const BASE_PATH = "/modbus-strain-calibrator/";
 const ISOLATION_HEADERS = {
 	"Cross-Origin-Opener-Policy": "same-origin",
 	"Cross-Origin-Embedder-Policy": "require-corp",

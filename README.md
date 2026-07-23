@@ -72,7 +72,7 @@ pnpm build
 pnpm preview
 ```
 
-`http://localhost:4173/modbus_strain_calibrator/` で確認できます。
+`http://localhost:4173/modbus-strain-calibrator/` で確認できます。
 
 ### テスト
 

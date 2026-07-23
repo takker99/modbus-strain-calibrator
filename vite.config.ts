@@ -76,7 +76,7 @@ export default defineConfig(({ command, isPreview }) => ({
 	// is cleaner at the root (avoids sub-path HMR/manifest quirks). The build and
 	// `vite preview` (which serves the built output) keep the deploy sub-path;
 	// index.html and manifest.json use base-relative URLs so both work.
-	base: command === "build" || isPreview ? "/modbus_strain_calibrator/" : "/",
+	base: command === "build" || isPreview ? "/modbus-strain-calibrator/" : "/",
 	build: {
 		// The app targets modern browsers only (Web Serial / SharedArrayBuffer /
 		// File System Access API), so we skip down-levelling to keep output lean.
