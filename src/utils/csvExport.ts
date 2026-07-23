@@ -9,29 +9,26 @@ export function calibrationToCsv(
 ): string {
 	const lines: string[] = [];
 
+	lines.push("Parameter,Value");
 	lines.push(
-		`# ModbusStrainCalibrator v${import.meta.env.VITE_APP_VERSION ?? "0.0.0"}`,
+		`ModbusStrainCalibrator,${import.meta.env.VITE_APP_VERSION ?? "0.0.0"}`,
 	);
-	lines.push(`# degree=${result.degree}`);
-	lines.push(`# a2=${result.a2}`);
-	lines.push(`# a1=${result.a1}`);
-	lines.push(`# a0=${result.a0}`);
-	lines.push(`# r2=${result.r2}`);
-	lines.push(`# rmse=${result.rmse}`);
-	lines.push(`# n=${result.n}`);
-	lines.push(`# updated_at=${new Date().toISOString()}`);
+	lines.push(`degree,${result.degree}`);
+	lines.push(`a2,${result.a2}`);
+	lines.push(`a1,${result.a1}`);
+	lines.push(`a0,${result.a0}`);
+	lines.push(`r2,${result.r2}`);
+	lines.push(`rmse,${result.rmse}`);
+	lines.push(`n,${result.n}`);
+	lines.push(`updated_at,${new Date().toISOString()}`);
 	if (ratedCapacity != null && ratedCapacity > 0) {
-		lines.push(`# rated_capacity=${ratedCapacity}`);
+		lines.push(`rated_capacity,${ratedCapacity}`);
 	}
 	if (ratedOutput) {
-		lines.push(`# rated_output_raw_span=${ratedOutput.raw}`);
-		lines.push(`# rated_output_mV_V=${ratedOutput.mVPerV}`);
-		lines.push(`# rated_output_raw_rated=${ratedOutput.rawRated}`);
-		lines.push(`# rated_output_raw_zero=${ratedOutput.rawZero}`);
-		if (ratedOutput.zeroImaginary) {
-			lines.push("# rated_output_zero_imaginary=true");
-		}
+		lines.push(`rated_output_raw,${ratedOutput.raw}`);
+		lines.push(`rated_output_mV_V,${ratedOutput.mVPerV}`);
 	}
+	lines.push("");
 	lines.push("timestamp_ms,x_filtered_raw,y_applied");
 
 	for (const p of points) {
