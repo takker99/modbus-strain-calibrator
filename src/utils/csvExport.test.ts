@@ -44,6 +44,29 @@ describe("calibrationToCsv", () => {
 		const lines = csv.split("\n");
 		expect(lines.length).toBeGreaterThanOrEqual(11);
 	});
+
+	it("includes rated capacity metadata when provided", () => {
+		const csv = calibrationToCsv(mockResult, mockPoints, 100, {
+			raw: 50,
+			mVPerV: 1.95,
+			extrapolated: false,
+		});
+		expect(csv).toContain("# rated_capacity=100");
+		expect(csv).toContain("# rated_output_raw=50");
+		expect(csv).toContain("# rated_output_mV_V=1.95");
+	});
+
+	it("omits rated capacity when zero", () => {
+		const csv = calibrationToCsv(mockResult, mockPoints, 0);
+		expect(csv).not.toContain("rated_capacity");
+		expect(csv).not.toContain("rated_output");
+	});
+
+	it("omits rated output when not provided", () => {
+		const csv = calibrationToCsv(mockResult, mockPoints, undefined);
+		expect(csv).not.toContain("rated_capacity");
+		expect(csv).not.toContain("rated_output");
+	});
 });
 
 describe("downloadCsv", () => {
