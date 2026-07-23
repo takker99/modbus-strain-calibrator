@@ -1,4 +1,5 @@
 import type { CalibrationResult } from "../types";
+import { HX711_MV_PER_V_SCALE } from "../utils/calibration";
 
 interface RegressionResultPanelProps {
 	result: CalibrationResult | null;
@@ -70,12 +71,25 @@ export function RegressionResultPanel({
 					<span className="text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
 						{result.ratedOutput.mVPerV.toFixed(4)} mV/V
 					</span>
+					<span className="text-slate-500 dark:text-slate-400">raw span:</span>
+					<span className="text-right font-mono text-slate-900 dark:text-slate-100">
+						{result.ratedOutput.raw.toFixed(1)} cnt
+					</span>
 					<span className="text-slate-500 dark:text-slate-400">
-						at rated capacity:
+						zero output:
 					</span>
 					<span className="text-right font-mono text-slate-900 dark:text-slate-100">
-						{result.ratedOutput.raw.toFixed(1)} raw
+						{(result.ratedOutput.rawZero * HX711_MV_PER_V_SCALE).toFixed(4)}{" "}
+						mV/V
 					</span>
+					{result.ratedOutput.zeroImaginary && (
+						<>
+							<span className="text-amber-600 dark:text-amber-400">
+								&#x26a0; zero approx
+							</span>
+							<span />
+						</>
+					)}
 					{result.ratedOutput.extrapolated && (
 						<>
 							<span className="text-amber-600 dark:text-amber-400">
