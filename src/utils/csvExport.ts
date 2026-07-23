@@ -24,8 +24,13 @@ export function calibrationToCsv(
 		lines.push(`# rated_capacity=${ratedCapacity}`);
 	}
 	if (ratedOutput) {
-		lines.push(`# rated_output_raw=${ratedOutput.raw}`);
+		lines.push(`# rated_output_raw_span=${ratedOutput.raw}`);
 		lines.push(`# rated_output_mV_V=${ratedOutput.mVPerV}`);
+		lines.push(`# rated_output_raw_rated=${ratedOutput.rawRated}`);
+		lines.push(`# rated_output_raw_zero=${ratedOutput.rawZero}`);
+		if (ratedOutput.zeroImaginary) {
+			lines.push("# rated_output_zero_imaginary=true");
+		}
 	}
 	lines.push("timestamp_ms,x_filtered_raw,y_applied");
 

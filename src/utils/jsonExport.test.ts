@@ -43,12 +43,16 @@ describe("calibrationToJson", () => {
 		const json = calibrationToJson(mockResult, mockPoints, 100, {
 			raw: 50,
 			mVPerV: 1.95,
+			rawRated: 60,
+			rawZero: 10,
 			extrapolated: false,
 		});
 		expect(json.ratedCapacity).toBe(100);
 		expect(json.ratedOutput).toEqual({
 			raw: 50,
 			mVPerV: 1.95,
+			rawRated: 60,
+			rawZero: 10,
 			extrapolated: false,
 		});
 	});

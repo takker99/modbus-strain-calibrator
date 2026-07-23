@@ -61,18 +61,22 @@ describe("calculateRatedOutput (linear)", () => {
 		if (!result.ok) return;
 		expect(result.value.raw).toBeCloseTo(50, 5);
 		expect(result.value.mVPerV).toBeCloseTo(50 * HX711_MV_PER_V_SCALE, 10);
+		expect(result.value.rawZero).toBeCloseTo(0, 5);
+		expect(result.value.rawRated).toBeCloseTo(50, 5);
 		expect(result.value.extrapolated).toBe(false);
 	});
 
-	it("computes rated output with offset", () => {
+	it("computes span correctly with non-zero offset", () => {
 		const result = calculateRatedOutput(1, 2, 0, 1, 101, {
 			min: 0,
 			max: 100,
 		});
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.raw).toBeCloseTo(50, 5);
-		expect(result.value.mVPerV).toBeCloseTo(50 * HX711_MV_PER_V_SCALE, 10);
+		expect(result.value.raw).toBeCloseTo(50.5, 5);
+		expect(result.value.mVPerV).toBeCloseTo(50.5 * HX711_MV_PER_V_SCALE, 10);
+		expect(result.value.rawZero).toBeCloseTo(-0.5, 5);
+		expect(result.value.rawRated).toBeCloseTo(50, 5);
 	});
 
 	it("detects extrapolation when raw outside x range", () => {
@@ -123,15 +127,31 @@ describe("calculateRatedOutput (linear)", () => {
 });
 
 describe("calculateRatedOutput (quadratic)", () => {
-	it("computes rated output for perfect quadratic data", () => {
+	it("computes rated output span for quadratic with imaginary zero", () => {
 		const result = calculateRatedOutput(1, 2, 3, 2, 6, {
 			min: -2,
 			max: 2,
 		});
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.mVPerV).toBeCloseTo(HX711_MV_PER_V_SCALE, 5);
+		expect(result.value.raw).toBeCloseTo(4 / 3, 5);
+		expect(result.value.mVPerV).toBeCloseTo((4 / 3) * HX711_MV_PER_V_SCALE, 5);
+		expect(result.value.rawRated).toBeCloseTo(1, 5);
+		expect(result.value.rawZero).toBeCloseTo(-1 / 3, 5);
+		expect(result.value.zeroImaginary).toBe(true);
+	});
+
+	it("computes rated output span for quadratic with real zero", () => {
+		const result = calculateRatedOutput(0, -4, 1, 2, 5, {
+			min: 0,
+			max: 10,
+		});
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
 		expect(result.value.raw).toBeCloseTo(1, 5);
+		expect(result.value.rawRated).toBeCloseTo(5, 5);
+		expect(result.value.rawZero).toBeCloseTo(4, 5);
+		expect(result.value.zeroImaginary).toBeUndefined();
 	});
 
 	it("returns error when discriminant is negative", () => {
@@ -152,15 +172,6 @@ describe("calculateRatedOutput (quadratic)", () => {
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 		expect(result.value.raw).toBeCloseTo(50, 5);
-	});
-
-	it("selects root closest to x range", () => {
-		const result = calculateRatedOutput(0, -4, 1, 2, 5, {
-			min: 0,
-			max: 10,
-		});
-		expect(result.ok).toBe(true);
-		if (!result.ok) return;
-		expect(result.value.raw).toBeCloseTo(5, 5);
+		expect(result.value.rawZero).toBeCloseTo(0, 5);
 	});
 });

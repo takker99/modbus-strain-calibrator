@@ -49,11 +49,27 @@ describe("calibrationToCsv", () => {
 		const csv = calibrationToCsv(mockResult, mockPoints, 100, {
 			raw: 50,
 			mVPerV: 1.95,
+			rawRated: 60,
+			rawZero: 10,
 			extrapolated: false,
 		});
 		expect(csv).toContain("# rated_capacity=100");
-		expect(csv).toContain("# rated_output_raw=50");
+		expect(csv).toContain("# rated_output_raw_span=50");
 		expect(csv).toContain("# rated_output_mV_V=1.95");
+		expect(csv).toContain("# rated_output_raw_rated=60");
+		expect(csv).toContain("# rated_output_raw_zero=10");
+	});
+
+	it("includes zero_imaginary flag when set", () => {
+		const csv = calibrationToCsv(mockResult, mockPoints, 100, {
+			raw: 50,
+			mVPerV: 1.95,
+			rawRated: 60,
+			rawZero: -5,
+			extrapolated: true,
+			zeroImaginary: true,
+		});
+		expect(csv).toContain("# rated_output_zero_imaginary=true");
 	});
 
 	it("omits rated capacity when zero", () => {
