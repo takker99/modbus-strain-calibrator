@@ -281,7 +281,12 @@ export default function App() {
 			)}
 
 			<div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-3 py-2 dark:border-slate-800">
-				<ModeSelector mode={cal.mode} onChange={cal.changeMode} />
+				<ModeSelector
+					mode={cal.mode}
+					onChange={cal.changeMode}
+					points1port={cal.pointsByMode.current["1port"].length}
+					points2port={cal.pointsByMode.current["2port"].length}
+				/>
 				<ChannelSelector
 					label={cal.mode === "2port" ? "Target CH" : "CH"}
 					value={settings.targetCh}
